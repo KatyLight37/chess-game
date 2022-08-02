@@ -1,0 +1,30 @@
+.KatyLight-diamond-progress >.dot {
+  height: 16px;
+  width: 16px;
+  background-color: #5c6c6c;
+  transform: rotate(45deg);
+  margin-top: 8px;
+  float: left;
+
+}
+.KatyLight-diamond-progress >.dot.ac {
+  background-color: cyan;
+  box-shadow: 0 0 10px 2px cyan;
+}
+.KatyLight-diamond-progress {
+  height: 32px;
+  position: relative;
+}
+.KatyLight-diamond-progress > .l {
+  position: absolute;
+  top: 14px;
+  height: 4px;
+  width: 100%;
+  background-color: #5c6c6c;
+ }
+.KatyLight-diamond-progress > .l > .i {
+  height: 4px;
+  background-color: cyan;
+  transition: width .1s linear;
+  box-shadow: 0 0 10px 2px cyan;
+}

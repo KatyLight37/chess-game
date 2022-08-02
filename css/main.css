@@ -1,0 +1,572 @@
+
+.game-map{
+user-select: none;
+  border: 1px solid white;
+  cursor: pointer;
+  color: white;
+font-size: 14px;
+}
+.game-map>.floor{
+  display: flex;
+  position: relative;
+}
+
+
+.game-map>.floor.cyan:hover,.game-map>.floor>.room.cyan:hover{
+  background-color: #00FFFF22;
+
+}
+
+.game-map>.floor:hover,.game-map>.floor>.room:hover{
+  background-color: #FFFFFF22;
+}
+
+.game-map>.floor.pass{
+  opacity: .5;
+}
+.game-map>.floor>.room>*{
+  pointer-events: none;
+}
+.game-map>.floor>.room.choose{
+  /*box-shadow: inset 0 0 10px 5px white;*/
+background-color: rgba(0, 255, 255, 0.18);
+}
+.game-map>.floor>.room{
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+}
+.game-map>.floor.active{
+  /*10px 5px*/
+  border: 1px dashed cyan;
+  /*box-shadow: inset 0 0 10px 5px cyan;*/
+}
+.game-map>.floor>.room>.chess.cyan,.game-map>.floor>.room>.item.cyan,
+.game-map>.floor.cyan>.room>.chess,.game-map>.floor.cyan>.room>.item,
+.game-map>.floor>.room.cyan>.chess,.game-map>.floor>.room.cyan>.item{
+  border-color: cyan;
+  color: cyan;
+}
+.game-map>.floor>.room>.item{
+  width: 100px;
+}
+.game-map>.floor>.room>.chess,.game-map>.floor>.room>.item{
+  display: inline-block;
+  position: relative;
+  border: 1px solid white;
+  padding:2px;
+  margin-top: 4px;
+  margin-left: 2px;
+}
+.game-map>.floor>.room>.chess>.info,.game-map>.floor>.item>.chess>.info{
+  display: none;
+  border: 1px solid white;
+  background-color: rgba(0,0,0,0.75);
+  z-index: 66;
+  color: white;
+  position: absolute;
+  left: 0;
+  padding: 5px;
+  top: calc(100% + 5px);
+  width: 100px;
+
+}
+.game-map>.floor>.room>.chess.cyan>.info,.game-map>.floor>.room>.item.cyan>.info{
+  border-color: cyan;
+  color: cyan;
+}
+/*.game-map>.floor>.room::after{
+  content: '';
+  clear: both;
+  display: block;
+}*/
+
+.game-map>.floor>.room>.chess:hover>.info,.game-map>.floor.cyan>.room>.item:hover>.info{
+  display: block;
+}
+::selection {
+  background-color: cyan;
+  color: black;
+
+}
+.window{
+  position: fixed;
+  height: 100vh;
+  width: 100vw;
+  z-index: 0;
+  overflow:auto;
+  display: none;
+}
+.window.show{
+  display: block;
+}
+progress.hp {
+  background-color: transparent;
+  border: 1px solid white;
+  height: 4px;
+
+  width: 100%;
+  margin-top: 3px;
+  transition: all .4s ease;
+  display: block;
+}
+
+progress.hp::-webkit-progress-bar {
+  background-color: transparent;
+  transition: all .4s ease;
+}
+
+progress.hp::-webkit-progress-value {
+  background-color: white;
+  transition: all .4s ease;
+}
+
+progress.hp::-moz-progress-bar {
+  background-color: white;
+  transition: all .4s ease;
+
+}
+
+.hpBar, .hpBar2 {
+  line-height: 20px;
+  background-color: transparent;
+  width: 90%;
+  border: 1px solid #9b9b9b;
+
+}
+.hpBar2{
+  float: right;
+}
+.cyanCube {
+  height: 16px;
+  width: 16px;
+  background-color: cyan;
+  box-shadow: 0 0 10px 2px cyan;
+  transform: rotate(45deg);
+  margin-top: 8px;
+  float: left;
+}
+
+#katyAbility {
+  color: cyan;
+  text-shadow: 0 0 5px cyan;
+  font-size: 24px;
+}
+
+.hpBar2 {
+  direction: rtl;
+}
+
+.hpBar2::before {
+
+  text-align: left;
+
+}
+
+.hpBar::before, .hpBar2::before {
+  counter-reset: progress var(--percent);
+  content: counter(progress) "%\2002";
+  display: block;
+  width: calc(100% * var(--percent) / 100);
+  font-size: 12px;
+  color: #000000;
+  background-color: cyan;
+  box-shadow: 0 0 10px 2px cyan;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: all .3s ease;
+  padding-inline-start: 10px;
+  box-sizing: border-box;
+
+}
+.hpBar::before{
+  /*background-image: linear-gradient(to right,cyan, #5e00ff);*/
+
+}
+.hpBar2::before {
+  text-align: right;
+  /*background-image: linear-gradient(to right,#5e00ff, cyan);*/
+
+}
+
+.hpBar::before {
+
+
+  text-align: left;
+}
+
+body {
+
+  padding: 0;
+  margin: 0;
+  background-color: black;
+  color: #b2b2b2;
+  /*font-family: system-ui, -apple-system, Segoe UI, Roboto, Emoji, Helvetica, Arial, sans-serif;*/
+}
+
+.timeBox{
+  height: 40px;
+  line-height: 40px;
+  vertical-align: middle;
+  text-align: center;
+  padding: 10px 0;
+  user-select: none;
+  background-image: linear-gradient(to bottom,cyan,cyan, #55ff00, #55ff00);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  font-size: 35px;
+  font-weight: bolder;
+  text-shadow: 0 0 5px cyan;
+}
+.timeBox.hide{
+  visibility: hidden;
+}
+.green {
+  color: #00ff00;
+
+}
+
+
+.skyBlue {
+  color: #5aadff;
+
+
+}
+.skyBlue.light{
+  text-shadow: 0 0 5px #5aadff;
+}
+
+.darkCyan {
+  color: darkCyan;
+}
+.darkSlateblue{
+  color:darkslateblue;
+}
+.darkMagenta {
+  color: darkmagenta;
+}
+.violet {
+  color: #a446ff;
+}
+
+.red {
+  color: red;
+
+}
+.red.light{
+  text-shadow: 0 0 5px red;
+}
+.orange {
+  color: orangered;
+}
+
+.brown {
+  color: #d56c46;
+
+}
+
+.center {
+  text-align: center;
+}
+
+.block {
+  display: block;
+}
+
+.blue {
+  color: #5a5aff;
+}
+
+.coralRed {
+  color: #ff1643;
+}
+
+.seaGreen {
+  color: #54ff99;
+}
+
+#infoBox {
+  height: 300px;
+  overflow-y: scroll;
+  padding: 5px;
+  font-size: 13px;
+  border: 1px solid white;
+  width: 700px;
+  margin: 0 auto;
+/*  position: fixed;
+  right: 10px;
+  bottom: 10px;
+
+  background-color: hsla(0deg,0%,0%,0.4);
+  padding: 10px;*/
+}
+
+.container {
+  display: flex;
+ }
+
+.user-control {
+  padding: 10px;
+  width: 210px;
+
+}
+
+.situation {
+  padding: 10px;
+  width: 200px;
+
+}
+.more-info {
+  padding: 10px;
+
+}
+.title {
+  border-left: 3px solid white;
+  color: white;
+  display: block;
+  padding: 3px 13px;
+  font-size: 13px;
+}
+
+.title.min {
+  font-size: 12px;
+  padding: 1px 7px;
+  margin-left: 10px;
+}
+
+.title2 {
+  border-right: 3px solid white;
+  color: white;
+  display: block;
+  padding: 3px 13px;
+  font-size: 13px;
+}
+
+#actionBox, #AliceSkillBox {
+  display: block;
+}
+
+.k-btn > .info {
+  width: 200px;
+  height: auto;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 23;
+  text-align: left;
+  color: white;
+  border: 1px solid white;
+  position: absolute;
+  left: 0;
+  top: 46px;
+  display: none;
+  padding: 7px;
+}
+p{
+  margin-block-start: 0;
+  margin-block-end: 0;
+}
+.k-btn:hover > .info {
+  display: block;
+}
+.clear::after{
+  display: block;
+  content: '';
+  clear: both;
+}
+.k-btn {
+/*  display: inline-block;
+*/  position: relative;
+  float: left;
+  display: block;
+  width: 90px;
+  margin: 5px;
+  box-sizing: border-box;
+  border: 1px solid #FF4500;
+  padding: 10px 0;
+  text-align: center;
+  background-color: transparent;
+  color: #FF4500;
+}
+
+.k-btn:hover {
+  box-shadow: inset 0 0 7px #FF4500, 0 0 7px #FF4500;
+}
+
+.k-btn.coralRed {
+  color: #ff1643;
+  border: 1px solid #ff1643;
+}
+
+.k-btn.coralRed:hover {
+  box-shadow: inset 0 0 7px #ff1643, 0 0 7px #ff1643;
+
+}
+
+.k-btn.orange {
+  color: #FF4500;
+  border: 1px solid #FF4500;
+}
+
+.k-btn.orange:hover {
+  box-shadow: inset 0 0 7px #FF4500, 0 0 7px #FF4500;
+
+}
+
+.k-btn.brown {
+  color: #d56c46;
+  border: 1px solid #d56c46;
+}
+
+.k-btn.brown:hover {
+  box-shadow: inset 0 0 7px #d56c46, 0 0 7px #d56c46;
+
+}
+
+.k-btn.blue {
+  color: #5a5aff;
+  border: 1px solid #5a5aff;
+}
+
+.k-btn.blue:hover {
+  box-shadow: inset 0 0 7px #5a5aff, 0 0 7px #5a5aff;
+
+}
+
+.k-btn.seaGreen {
+  color: #54ff99;
+  border: 1px solid #54ff99;
+}
+
+.k-btn.seaGreen:hover {
+  box-shadow: inset 0 0 7px #54ff99, 0 0 7px #54ff99;
+
+}
+
+.k-btn.white {
+  color: white;
+  border: 1px solid white;
+}
+
+.k-btn.white:hover {
+  box-shadow: inset 0 0 7px white, 0 0 7px white;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #808080;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #232323;
+}
+
+::-webkit-scrollbar-corner {
+  background-color: #232323;
+}
+
+.hpBox, .abilityBox {
+  display: flex;
+  padding: 10px;
+}
+
+.hpBox > .item, .abilityBox > .item {
+  flex: 1;
+}
+.abilityBox > .item{
+  padding-left: 10px;
+}
+.flex{
+  display: flex;
+}
+.f1{
+  flex: 1;
+}
+.chessInfoBox{
+   padding: 2px;
+  display: flex;
+  width: 400px;
+}
+.chessInfoBox>.item{
+  margin: 3px;
+  flex: 1;
+  padding: 5px;
+  border: 1px solid white;
+}
+.abilityBox > .item2 {
+  width: 120px;
+  text-align: center;
+
+
+}
+
+.c-btn > .info {
+  width: 200px;
+  height: auto;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 23;
+  color: white;
+  border: 1px solid white;
+  position: absolute;
+  left: 50px;
+  top: 46px;
+  display: none;
+  padding: 10px;
+}
+
+.c-btn:hover > .info {
+  display: block;
+}
+
+.c-btn {
+  display: block;
+  margin: 5px;
+  position: relative;
+  box-sizing: border-box;
+  border: 1px solid white;
+  padding: 5px;
+  background-color: transparent;
+  color: white;
+  user-select: none;
+}
+
+.c-btn.choose {
+  box-shadow: inset 0 0 7px white, 0 0 7px white;
+
+}
+.c-btn.active{
+  /*font-weight: bolder;*/
+  border-color: cyan;
+  color:cyan;
+
+}
+.c-btn.active:hover{
+  box-shadow: inset 0 0 7px cyan, 0 0 7px cyan;
+
+}
+.c-btn.active.choose{
+  box-shadow: inset 0 0 7px cyan, 0 0 7px cyan;
+}
+.c-btn.active>progress.hp{
+  border: 1px solid cyan;
+}
+.c-btn.active>progress.hp::-webkit-progress-bar {
+  background-color: transparent;
+ }
+
+.c-btn.active>progress.hp::-webkit-progress-value {
+  background-color: cyan;
+ }
+
+.c-btn.active>progress.hp::-moz-progress-bar {
+  background-color: cyan;
+
+}
+.c-btn.disabled{
+  opacity: .6;
+}
+.c-btn:hover {
+  box-shadow: inset 0 0 7px white, 0 0 7px white;
+}

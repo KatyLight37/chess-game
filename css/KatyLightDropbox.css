@@ -1,0 +1,50 @@
+.kl-dropbox>.item.drag {
+  position: fixed;
+  z-index: 999;
+}
+
+.kl-dropbox>.shadow {
+  float: left;
+  margin: 2px 2px 0 0;
+  height: 70px;
+  width: 70px;
+  border: 1px dashed white;
+  display: none;
+}
+
+.kl-dropbox>.shadow.drag {
+  display: block;
+}
+
+body {
+  background-color: black;
+  padding: 0;
+  margin: 0;
+}
+
+.kl-dropbox {
+  border: 1px solid white;
+  padding: 3px;
+  user-select: none;
+  position: relative;
+}
+
+.kl-dropbox>.item {
+  float: left;
+  margin: 2px 2px 0 0;
+  height: 70px;
+  width: 70px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid white;
+  color: white;
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, .45);
+  user-select: none;
+}
+
+.kl-dropbox::after {
+  content: '';
+  display: block;
+  clear: both;
+}

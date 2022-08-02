@@ -1,0 +1,127 @@
+.kl-workbench-box > .item.drag {
+  position: fixed;
+  z-index: 999;
+}
+
+
+.kl-workbench-box > .shadow {
+  float: left;
+  margin: 2px 2px 0 0;
+  height: 70px;
+  width: 70px;
+  border: 1px dashed white;
+  display: none;
+}
+
+.kl-workbench-box > .shadow.drag {
+  display: block;
+}
+
+
+
+.kl-workbench-box {
+
+  user-select: none;
+  position: relative;
+}
+
+.kl-workbench > .move.drag{
+  position: fixed;
+  display: block;
+  z-index: 999;
+}
+.kl-workbench > .move{
+  display: none;
+}
+.kl-workbench>.row > .item:last-child{
+  margin: 10px 0 0 0;
+}
+.kl-workbench-box > .item,.kl-workbench > .move  {
+  float: left;
+  margin: 2px 2px 0 0;
+  height: 70px;
+  width: 70px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid white;
+  color: white;
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, .45);
+  user-select: none;
+}
+
+.kl-workbench-box::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+.kl-workbench {
+
+  padding: 2px;
+  position: relative;
+}
+
+.kl-workbench > .row > .item, .kl-workbench > .row > .treasure {
+  border: 1px solid white;
+
+  font-size: 14px;
+  text-align: center;
+
+
+}
+
+.kl-workbench > .row > .item.hover {
+  border-color: cyan;
+  background-color: rgba(0, 255, 255, 0.34);
+}
+
+.kl-workbench > .row > .item.has {
+  border-color: cyan;
+  color: cyan;
+}
+
+.kl-workbench > .row > .item, .kl-workbench > .row > .empty,
+.kl-workbench > .row > .treasure {
+  height: 70px;
+  width: 70px;
+  margin: 10px 10px 0 0;
+  float: left;
+  user-select: none;
+  box-sizing: border-box;
+  cursor: pointer;
+  position: relative;
+}
+
+.kl-workbench > .row > .item > .del {
+  display: none;
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  bottom: 5px;
+  font-size: 20px;
+}
+
+.kl-workbench > .row > .item > .del::before {
+  content: '×';
+}
+
+.kl-workbench > .row > .item.has > .del {
+  display: block;
+}
+
+.kl-workbench > .row::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+.kl-workbench > .row > .item.drag {
+  position: fixed;
+  z-index: 999;
+
+}
+
+.info.cyan {
+  color: cyan;
+}

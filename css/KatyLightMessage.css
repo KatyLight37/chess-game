@@ -1,0 +1,64 @@
+.KatyLight-message-box {
+  position: fixed;
+  top:250px;
+  width: 100vw;
+  left: 0;
+  user-select: none;
+  pointer-events: none;
+}
+.KatyLight-message-box > .item {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  border: 1px solid white;
+  color: white;
+  padding: 10px 10px 10px 30px;
+  background-color: rgba(0, 0, 0, 0.7);
+}
+.KatyLight-message-box > .item.warn{
+  color: cyan;
+  border-color: cyan;
+}
+.KatyLight-message-box > .item.error{
+  color: red;
+  border-color: red;
+}
+.KatyLight-message-box > .item.success{
+  color: #00ff00;
+  border-color: #00ff00;
+}
+.KatyLight-message-box > .item.yellow{
+  color: #FFFF00;
+  border-color: #FFFF00;
+}
+.KatyLight-message-box > .item.primary{
+  color: #5200ff;
+  border-color: #5200ff;
+}
+.KatyLight-message-box > .item.show {
+  animation: ease KatyLight-message-show 1s forwards;
+}
+.KatyLight-message-box > .item.hide {
+  animation: ease KatyLight-message-hide 1s forwards;
+}
+@keyframes KatyLight-message-show {
+  0% {
+    transform: translateY(10vh);
+    opacity: .3;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes KatyLight-message-hide {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-10vh);
+    opacity: 0;
+  }
+}

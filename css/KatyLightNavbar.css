@@ -1,0 +1,25 @@
+.KatyLight-navbar {
+  color: white;
+  position: relative;
+  user-select: none;
+}
+.KatyLight-navbar>.line {
+  background-color: cyan;
+  height: 3px;
+  position: absolute;
+  left: 0;
+  transition: all .5s ease;
+  box-shadow: 0 0 10px 5px cyan;
+}
+.KatyLight-navbar::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+.KatyLight-navbar > .item {
+  float: left;
+  padding: 5px 10px;
+}
+.KatyLight-navbar > .item:hover {
+  text-shadow: 0 0 6px white;
+}
