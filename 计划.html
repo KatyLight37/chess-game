@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <style>
+    .rebeccapurple {
+      color: rebeccapurple;
+    }
+
+    .red {
+      color: red;
+    }
+
+    .blue {
+      color: blue;
+    }
+
+    li::marker {
+      color: #05d7ac;
+     }
+
+    .ok {
+      color: green;
+    }
+
+    .ok:after {
+      content: '√';
+    }
+
+    .err {
+      color: red;
+    }
+
+    .err:after {
+      content: "×";
+    }
+
+    .err, .ok {
+      font-weight: bolder;
+      font-size: 22px;
+    }
+    div:before{
+      content: "";
+      display: inline-block;
+      height: 15px;
+      width: 15px;
+      border-radius: 50%;
+      background:linear-gradient(to bottom, #dd00ff, #00eaff);
+      opacity: .5;
+
+    }
+    li:hover,div:hover{
+      background-color:#11654e22 ;
+    }
+    body{
+      background-color: #d3efeb;
+      color: #11654e;
+    }
+  </style>
+</head>
+<body>
+<div>
+  战斗系统：<span class="rebeccapurple">一半</span>
+  <ul>
+    <li>基本技能释放<i class="ok"></i></li>
+    <li>基本伤害克制<i class="ok"></i></li>
+    <li>回合结束恢复行动力<i class="err"></i></li>
+    <li>buff导致增益或者持续伤害，多个不冲突<i class="err"></i></li>
+    <li>特殊效果，比如反伤，防止死亡，瞬杀等等<i class="err"></i></li>
+    <li>环境效果<i class="err"></i></li>
+    <li>使用消耗品<i class="err"></i></li>
+  </ul>
+</div>
+<div>
+  物品合成系统：<span class="blue">部分</span>
+  <ul>
+    <li>基本合成<i class="ok"></i></li>
+    <li>混乱合成<i class="err"></i></li>
+    <li>概率合成<i class="err"></i></li>
+  </ul>
+</div>
+<div>
+  棋子穿戴系统：<span class="red">一点点</span>
+  <ul>
+    <li>基本穿戴<i class="err"></i></li>
+    <li>穿戴佩戴技能<i class="err"></i></li>
+    <li>穿戴带有特殊战斗效果<i class="err"></i></li>
+  </ul>
+</div>
+<div>
+  随机关卡：<span class="red">一点点</span>
+</div>
+<div>
+  技能系统：<span class="red">一点点</span>
+  <ul>
+    <li>基本技能释放<i class="ok"></i></li>
+    <li>高级技能释放<i class="err"></i></li>
+    <li>物品技能携带<i class="err"></i></li>
+    <li>技能可以修改自身消耗<i class="err"></i></li>
+  </ul>
+</div>
+<div>
+  存档：<span class="red">一点点</span>
+  <ul>
+    <li>保存并且读取<i class="err"></i></li>
+    <li>检查是否错误<i class="err"></i></li>
+  </ul>
+</div>
+<div>
+  编辑器：<span class="red">无</span>
+</div>
+<div>
+  buff：<span class="red">无</span>
+  <ul>
+    <li>正面负面buff<i class="err"></i></li>
+    <li>持续伤害的buff<i class="err"></i></li>
+    <li>免死的buff<i class="err"></i></li>
+    <li>跳过回合的buff<i class="err"></i></li>
+    <li>额外行动的buff<i class="err"></i></li>
+    <li>增益功能的buff<i class="err"></i></li>
+    <li>恢复行动力的buff<i class="err"></i></li>
+  </ul>
+</div>
+<div>
+  平衡性：<span class="red">无</span>
+  <ul>
+    <li>编辑器页调整修改<i class="err"></i></li>
+  </ul>
+</div>
+<div>
+  UI交互：<span class="rebeccapurple">部分</span>
+  <ul>
+    <li>视图系统<i class="ok"></i></li>
+    <li>战斗隐藏切换页<i class="ok"></i></li>
+  </ul>
+</div>
+<div>
+  地图系统：<span class="rebeccapurple">部分</span>
+  <ul>
+    <li>每一层房间<i class="ok"></i></li>
+    <li>进入房间<i class="ok"></i></li>
+    <li>禁止跨楼<i class="ok"></i></li>
+    <li>楼层过高滚动显示<i class="err"></i></li>
+    <li>完成地图后进入下一个地图<i class="err"></i></li>
+    <li>商店，随机事件，boss<i class="err"></i></li>
+    <li>商店不刷新<i class="err"></i></li>
+    <li>战斗后获得奖励<i class="err"></i></li>
+    <li>不同环境的房间外观不同<i class="err"></i></li>
+  </ul>
+</div>
+<div>
+  商店系统：<span class="red">无</span>
+  <ul>
+    <li>购买物品<i class="err"></i></li>
+    <li>刷新物品<i class="err"></i></li>
+    <li>偶尔限时加入物品，相同的商人物品不刷新，东西购买完了，在下一次进入才会补充<i class="err"></i></li>
+    <li>不同的商人<i class="err"></i></li>
+    <li>抽奖，比如洞洞乐，盲盒，抽数字换奖品，抽奖在相同的商人不会刷新，只有东西抽完才会<i class="err"></i></li>
+  </ul>
+</div>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <script>
+    window.onload = () => {
+
+    }
+    var data = {
+      list: {
+        name: '天秤座',
+        level: 12,
+        zId: 'Z000001'
+      }
+    }
+
+    function down() {
+      console.log(JSON.stringify(data))
+
+      exportRaw('存档.json', JSON.stringify(data))
+    }
+
+
+    function upload(e){
+      let file = e.target.files[0];
+      let file_reader = new FileReader();
+      file_reader.onload = () => {
+        console.log(file_reader.result)
+
+        try{
+          data=JSON.parse(file_reader.result);
+          console.log(data)
+        }catch (e){
+          console.log(e)
+        }
+      };
+      file_reader.onerror=()=>{
+        console.log('错误文件！')
+      }
+      file_reader.readAsText(file, 'UTF-8');
+    }
+
+    function exportRaw(name, data) {
+      var urlObject = window.URL || window.webkitURL || window
+      var export_blob = new Blob([data], { type: 'text/json' })
+      console.log(data)
+      let url = urlObject.createObjectURL(export_blob)
+
+      const eleLink = document.createElement('a')
+      eleLink.download = name
+      eleLink.style.display = 'none'
+      eleLink.href = url
+      // 触发点击
+      document.body.appendChild(eleLink)
+      eleLink.click()
+      // 然后移除
+      document.body.removeChild(eleLink)
+    }
+  </script>
+</head>
+<body>
+<button onclick="down()">下载存档</button>
+<input type="file" onchange="upload(event)" accept=".json">上传文档
+</body>
+</html>

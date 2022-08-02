@@ -1,0 +1,2850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+
+  <script src="js/KatyLightDiamondProgress.js"></script>
+
+  <script src="js/KatyLightBench.js"></script>
+  <link type="text/css" href="css/KatyLightDiamondProgress.css" rel="stylesheet"/>
+  <link type="text/css" href="css/font-face.css" rel="stylesheet"/>
+  <script src="js/KatyLightMessage.js"></script>
+  <script src="js/KatyLightNavbar.js"></script>
+  <script src="js/KatyLightWeaponRack.js"></script>
+  <link type="text/css" href="css/KatyLightMessage.css" rel="stylesheet"/>
+  <link type="text/css" href="css/KatyLightNavbar.css" rel="stylesheet"/>
+  <link type="text/css" href="css/main.css" rel="stylesheet"/>
+  <link type="text/css" href="css/kl.css" rel="stylesheet"/>
+  <link type="text/css" href="css/bench.css" rel="stylesheet"/>
+  <style>
+
+
+
+    .KatyLight-navbar.center> .item{
+      float: none;
+      display: inline-block;
+    }
+    .KatyLight-navbar.center{
+      text-align: center;
+    }
+  </style>
+  <script>
+    'use strict'
+    var VIEW = {
+      WINDOW: {
+        index: 0,
+        value: null,
+        DOM: {
+          list: [],
+          properties: {}
+        },
+        ACTIVE: {
+          SHOW: function(value ) {
+            console.log(value)
+            if (VIEW.WINDOW.value) {
+              VIEW.WINDOW.DOM.properties[VIEW.WINDOW.value].classList.remove('show')
+            }
+            VIEW.WINDOW.DOM.properties[value].classList.add('show')
+            VIEW.WINDOW.value = value
+
+            if (VIEW.WINDOW.value === 'battle') {
+              UI.Target.controlNav.visible(false)
+            } else {
+              UI.Target.controlNav.visible(true)
+            }
+
+
+          }
+        },
+        INIT: {
+          ALL: function() {
+            UI.INIT.controlNav();
+            VIEW.WINDOW.DOM.list = document.querySelectorAll('.window')
+            VIEW.WINDOW.DOM.list.forEach(item => {
+              VIEW.WINDOW.DOM.properties[item.dataset.name] = item
+            })
+            console.log(VIEW.WINDOW.DOM)
+
+          },
+          BattleShow: function() {
+            // VIEW.WINDOW.DOM.querySelector('[data-name="battle"]').classList.add("show");
+          }
+        }
+      },
+      ACTION: {
+        battle: function() {
+          BATTLE.INIT.AliceChessList()
+          BATTLE.INIT.KatyChessList()
+          UI.INIT.abilityBar()
+
+          BATTLE.INIT.total()
+          BATTLE.INIT.AliceSkillsInit()
+          BATTLE.INIT.KatySkillsInit()
+          BATTLE.INIT.KatyAIInit()
+          BATTLE.INIT.AliceChessListBoxInit()
+          BATTLE.INIT.KatyChessListBoxInit()
+          UI.Draw.AliceChessInfo()
+          UI.Draw.KatyChessInfo()
+          BATTLE.ROUND.START()
+
+        }
+      }
+    }
+    var MAP = {
+      DATA: {
+        level: 1,
+        rId: -1,
+        map: [],
+        way: [],
+        getters: {
+          getRoom: function(index) {
+            console.log(MAP.DATA.level - 2)
+            console.log(MAP.DATA.rId - 1)
+            if (index === undefined) {
+              return MAP.DATA.map[MAP.DATA.level - 2].rooms[MAP.DATA.rId - 1]
+            }
+
+          }
+        }
+      },
+
+      OBJECT: {
+        Room: class {
+          constructor(params) {
+            Object.keys(params).forEach(item => {
+              this[item] = params[item]
+            })
+            this.dom = document.createElement('div')
+            if (this.list) {
+              for (let i = 0; i < this.list.length; i++) {
+                let z = document.createElement('div')
+                switch (this.list[i].type) {
+                  case 'chess':
+                    z.classList.add('chess')
+                    break
+                  case 'item':
+                    z.classList.add('chess')
+                    break
+                  default:
+                    z.classList.add('chess')
+                    break
+                }
+                let stars = ''
+                for (let j = 0; j < 5; j++) {
+                  if (j < this.list[i].level) {
+                    stars += '★'
+                  } else {
+                    stars += '☆'
+                  }
+                }
+                z.innerHTML = `
+            <div>${this.list[i].name}</div>
+<div>${stars}</div>
+<div class="info">
+${this.list[i].content}
+</div>`
+
+                this.dom.append(z)
+
+              }
+            }
+            this.dom.dataset.id = this.id
+            this.dom.setAttribute('onclick', 'MAP.Mutual.move(event)')
+            this.dom.classList.add('room')
+            // UI.Target.gameMap.append(this.dom)
+          }
+
+          destroy() {
+            UI.Target.gameMap.remove(this.dom)
+            this.dom = null
+          }
+
+          choose() {
+            this.choose = true
+            this.dom.classList.add('choose')
+          }
+        },
+        Floor: class {
+          constructor(params) {
+            Object.keys(params).forEach(item => {
+              this[item] = params[item]
+            })
+            this.dom = document.createElement('div')
+            this.dom.classList.add('floor')
+            for (let i = 0; i < this.rooms.length; i++) {
+              this.dom.append(this.rooms[i].dom)
+            }
+            this.dom.dataset.id = this.id
+            UI.Target.gameMap.prepend(this.dom)
+
+          }
+
+          destroy() {
+            UI.Target.gameMap.remove(this.dom)
+            this.dom = null
+          }
+
+          active() {
+            this.active = true
+            this.dom.classList.add('active')
+          }
+
+          pass() {
+            this.active = false
+            this.pass = true
+            this.dom.classList.add('pass')
+            this.dom.classList.remove('active')
+          }
+        }
+      },
+      INIT: {
+        create: function() {
+          let caster = []
+          for (let i = 0; i < 12; i++) {
+            let k = Math.floor(Math.random() * 3 + 1)
+            let arr = []
+            for (let j = 0; j < k; j++) {
+              let z = 1
+              switch (true) {
+                case i < 3:
+                  console.log('i<3')
+                  break
+                case i < 7:
+                  z = Math.floor(Math.random() * 2 + 2)
+                  console.log('i<7')
+                  break
+                case i < 11:
+                  z = Math.floor(Math.random() * 3 + 3)
+                  console.log('i<11')
+                  break
+                case i === 11:
+                  z = 6
+                  console.log('i<12')
+                  break
+              }
+              let krr = []
+              let kk = DATA.chessLibrary.length
+              for (let m = 0; m < z; m++) {
+                let chess = DATA.chessLibrary[Math.floor(Math.random() * kk)]
+                krr.push({
+                  type: 'chess',
+                  name: chess.name,
+                  id: chess.id,
+                  level: Math.floor(Math.random() * 3 + 1),
+                  content: chess.name
+                  // skills:[...chess.skills] 目前是自动
+
+                })
+              }
+              arr.push(new MAP.OBJECT.Room({ name: '怪物房', list: krr, id: (j + 1), role: 1 }))
+            }
+            caster.push(new MAP.OBJECT.Floor({
+              rooms: arr,
+              id: (i + 1)
+            }))
+          }
+          MAP.DATA.map = caster
+          MAP.DATA.map[0].active()
+          console.log(caster)
+        },
+        clear: function() {
+          UI.Target.gameMap.innerHTML = ''
+        }
+      },
+      Mutual: {
+        move: function(e) {
+          let roomId = parseInt(e.target.dataset.id)
+          // e.target.classList.add('choose');
+          let floorId = parseInt(e.target.parentNode.dataset.id)
+          MAP.DATA.rId = roomId
+          if (floorId === MAP.DATA.level) {
+            console.log('选择')
+            MAP.DATA.map[floorId - 1].pass()
+            MAP.DATA.map[floorId - 1].rooms[roomId - 1].choose()
+            MAP.DATA.way.push(roomId)
+            MAP.DATA.level++
+            for (let i = 0; i < MAP.DATA.map[floorId - 1].rooms.length; i++) {
+              MAP.DATA.map[floorId - 1].rooms[i].dom.removeAttribute('onclick')
+            }
+            if (MAP.DATA.level > 12) {
+              console.log('恭喜过关')
+              console.log(MAP.DATA.way)
+            } else {
+              MAP.DATA.map[floorId].active()
+            }
+            BATTLE.PVE.KatyChessListStatic = MAP.DATA.map[floorId - 1].rooms[roomId - 1].list
+            VIEW.WINDOW.ACTIVE.SHOW('battle')
+            VIEW.ACTION.battle()
+          } else {
+            console.log('不允许跳关')
+          }
+
+        }
+      }
+    }
+    var Enum = {
+      ele: {
+        NORMAL: 0,
+        WIND: 1,
+        FIRE: 2,
+        WATER: 3,
+        EARTH: 4,
+        HERB: 5,
+        ICE: 6,
+        STEEL: 8,
+        ELECTRIC: 7,
+        DARK: 9,
+        LIGHT: 10,
+        PSYCHIC: 11,
+        properties: {
+          0: {
+            label: '普通',
+            key: 'NORMAL',
+            code: 0
+          },
+          1: {
+            label: '风',
+            key: 'WIND',
+            code: 1
+          },
+          2: {
+            label: '火',
+            key: 'FIRE',
+            code: 2
+          },
+          3: {
+            label: '水',
+            key: 'WATER',
+            code: 3
+          },
+          4: {
+            label: '土',
+            key: 'EARTH',
+            code: 4
+          },
+          5: {
+            label: '草',
+            key: 'HERB',
+            code: 4
+          },
+          6: {
+            label: '冰',
+            key: 'ICE',
+            code: 6
+          },
+          7: {
+            label: '电',
+            key: 'ELECTRIC',
+            code: 7
+          },
+          8: {
+            label: '钢',
+            key: 'STEEL',
+            code: 8
+          },
+          9: {
+            label: '暗',
+            key: 'DARK',
+            code: 9
+          },
+          10: {
+            label: '光',
+            key: 'LIGHT',
+            code: 10
+          },
+          11: {
+            label: '超能',
+            key: 'PSYCHIC',
+            code: 11
+          }
+
+        }
+      },
+      item: {
+        CHESS: 0,
+        PUZZLE: 1,
+        RUBBISH: 2,
+        ELEMENT: 3,
+        GOODS: 4,
+        WEAPON: 5,
+        SHIELD: 6,
+        GEM: 7,
+        RING: 8,
+        HALO: 9,
+        TOOL: 10,
+        MEDICINES: 11,
+        properties: {
+          0: {
+            label: '棋子',
+            key: 'CHESS',
+            code: 0
+          },
+          1: {
+            label: '拼图',
+            key: 'PUZZLE',
+            code: 1
+          },
+          2: {
+            label: '垃圾',
+            key: 'RUBBISH',
+            code: 2
+          },
+          3: {
+            label: '元素',
+            key: 'ELEMENT',
+            code: 3
+          },
+          4: {
+            label: '物品',
+            key: 'GOODS',
+            code: 4
+          },
+          5: {
+            label: '武器',
+            key: 'WEAPON',
+            code: 5
+          },
+          6: {
+            label: '盾',
+            key: 'SHIELD',
+            code: 6
+          },
+          7: {
+            label: '宝石',
+            key: 'GEM',
+            code: 7
+          },
+          8: {
+            label: '饰品',
+            key: 'RING',
+            code: 8
+          },
+          9: {
+            label: '光环',
+            key: 'HALO',
+            code: 9
+          },
+          10: {
+            label: '工具',
+            key: 'TOOL',
+            code: 10
+          },
+          11: {
+            label: '消耗品',
+            key: 'MEDICINES',
+            code: 11
+          }
+
+        }
+      }
+    }
+
+    var STORE = {
+      USER: {
+        chessDepository: [
+          //  Zid是随机号码，会自动找重复，
+          {
+            zid: 'Z2130303',
+            cid: 'C001',//c000为自定义
+            name: '天秤座',
+            level: 1,
+            maxHp: 19999,
+            atk: 220,
+            speed: 100,
+            speAtk: 230,
+            def: 70,
+            speDef: 100,
+            abilityBout: 2,
+            abilityMax: 12,
+            abilityStart: 12,
+            defEle: Enum.ele.WIND,
+            skills: [
+              {
+                kid: 'A005',
+                role: 1// 物品添加
+              },
+              {
+                kid: 'A001',
+                role: 0//自带
+              },
+              {
+                kid: 'A002',
+                role: 1//不会重复制造任何重复技能id
+              },
+              {
+                kid: 'A003',
+                role: 2//特殊添加，删除永久删除
+              }
+
+            ],
+            equip:{
+              1:null,
+              2:null,
+              3:null,
+              4:null,
+              5:null,
+              6:{
+                name:"天球仪",
+                data:{
+                  hp:1000
+                },
+                id:'I0004'
+              },
+              7:null,
+              8:null
+            }
+          },
+          //  Zid是随机号码，会自动找重复，
+          {
+            zid: 'Z2132203',
+            cid: 'C001',//c000为自定义
+            name: '天秤座',
+            level: 1,
+            maxHp: 19999,
+            atk: 220,
+            speed: 100,
+            speAtk: 230,
+            def: 70,
+            speDef: 100,
+            abilityBout: 2,
+            abilityMax: 12,
+            abilityStart: 12,
+            defEle: Enum.ele.WIND,
+            skills: [
+              {
+                kid: 'A005',
+                role: 1// 物品添加
+              },
+              {
+                kid: 'A001',
+                role: 0//自带
+              },
+              {
+                kid: 'A002',
+                role: 1//不会重复制造任何重复技能id
+              },
+              {
+                kid: 'A003',
+                role: 2//特殊添加，删除永久删除
+              }
+
+            ],
+            equip:{
+              1:null,
+              2:null,
+              3:null,
+              4:null,
+              5:null,
+              6:null,
+              7:null,
+              8:null
+            }
+          }
+        ],
+        depository:  [
+          {
+            name: '恶魔之书',
+            id: 'I0001',
+            grade: 3
+          },
+          {
+            name: '黄道',
+            quantity: 9,
+            id: 'I0002',
+            grade: 9
+          },
+          {
+            name: '白道',
+            quantity: 9,
+            id: 'I0000',
+            grade: 9
+          },
+          {
+            name: '大恢复药水',
+            id: 'I0003',
+            grade: 3
+          },
+          {
+            name: '天球仪',
+            id: 'I0004',
+            grade: 12
+          },
+          {
+            name: '万能星座拼图',
+            id: 'I0005',
+            grade: 4
+          },
+          {
+            name: '黄道星座拼图',
+            id: 'I0006',
+            grade: 3
+          },
+          {
+            name: '万能拼图',
+            id: 'I0007',
+            grade: 5
+          },
+          {
+            name: '塔罗牌拼图',
+            id: 'I0008',
+            grade: 3
+          },
+          {
+            name: '天秤座拼图',
+            id: 'I0009',
+            grade: 2
+          },
+          {
+            name: '天秤座',
+            id: 'I0010',
+            grade: 7
+
+          },
+          {
+            name: '猎户座',
+            id: 'I0011',
+            grade: 7
+          },
+          {
+            name: '蓝莓宝石',
+            id: 'I0012',
+            quantity: 9,
+            grade: 9
+          }
+        ]
+      }
+    }
+    var UI = {
+      Target: {
+        controlNav: null,
+        bench: null,
+        storeNav: null,
+        storeContent: null,
+        msgBox: null,
+        gameMap: null,
+        aliceRoundTimerView: null,
+        AliceChessListBox: null,
+        AliceHPBar: null,
+        KatyHPBar: null,
+        AliceHPText: null,
+        KatyHPText: null,
+        KatyAbilitySpan: null,
+        abilityBar: null,
+        KatyChessListBox: null,
+        AliceChessInfo: null,
+        KatyChessInfo: null,
+        WeaponRack:null
+      },
+      Draw: {
+        showStoreContent: function(id) {
+
+          document.getElementById(UI.Target.storeContent).classList.remove('show')
+          UI.Target.storeContent = id
+          document.getElementById(UI.Target.storeContent).classList.add('show')
+        },
+        setAbilityProgress: function(target, v) {
+          console.log(target.ability)
+          if (target.camp === 0) {
+            UI.Target.abilityBar.setValue(target.ability)
+            if (v) {
+              UI.Target.abilityBar.setTotal(target.abilityMax)
+            }
+          } else {
+            UI.Target.KatyAbilitySpan.innerText = BATTLE.PVE.Katy.ability
+
+          }
+        },
+        AliceHPBar: function(p) {
+          let t = '--percent: ' + p + ';'
+          UI.Target.AliceHPBar.setAttribute('style', t)
+          UI.Target.AliceHPText.innerText = BATTLE.PVE.Alice.hp
+          UI.Draw.AliceChessListBox(BATTLE.PVE.AliceIndex)
+
+        },
+        KatyHPBar: function(p) {
+          let t = '--percent: ' + p + ';'
+          UI.Target.KatyHPText.innerText = BATTLE.PVE.Katy.hp
+          UI.Target.KatyHPBar.setAttribute('style', t)
+          UI.Draw.KatyChessListBox(BATTLE.PVE.KatyIndex)
+        },
+        AliceChessInfo: function() {
+          UI.Target.AliceChessInfo.querySelector('.title').innerText = BATTLE.PVE.Alice.name
+          UI.Target.AliceChessInfo.querySelector('.defEle').innerText = Enum.ele.properties[BATTLE.PVE.Alice.defEle].label
+          UI.Target.AliceChessInfo.querySelector('.atk').innerText = BATTLE.PVE.Alice.atk
+          UI.Target.AliceChessInfo.querySelector('.speAtk').innerText = BATTLE.PVE.Alice.speAtk
+          UI.Target.AliceChessInfo.querySelector('.def').innerText = BATTLE.PVE.Alice.def
+          UI.Target.AliceChessInfo.querySelector('.speDef').innerText = BATTLE.PVE.Alice.speDef
+          UI.Target.AliceChessInfo.querySelector('.heal>.max').innerText = BATTLE.PVE.Alice.maxHp
+          UI.Target.AliceChessInfo.querySelector('.heal>.value').innerText = BATTLE.PVE.Alice.hp
+          UI.Target.AliceChessInfo.querySelector('.hp').value = BATTLE.PVE.Alice.hp
+          UI.Target.AliceChessInfo.querySelector('.hp').max = BATTLE.PVE.Alice.maxHp
+          UI.Target.AliceChessInfo.querySelector('.speed').innerText = BATTLE.PVE.Alice.speed
+          UI.Target.AliceChessInfo.querySelector('.ability').innerText = BATTLE.PVE.Alice.ability
+          UI.Target.AliceChessInfo.querySelector('.abilityMax').innerText = BATTLE.PVE.Alice.abilityMax
+          let t = ''
+          for (let i = 0; i < 5; i++) {
+            if (i < BATTLE.PVE.Alice.level) {
+              t += '★'
+            } else {
+              t += '☆'
+            }
+          }
+          UI.Target.AliceChessInfo.querySelector('.star').innerText = t
+
+        },
+        AliceChessInfoChange: function(key) {
+          switch (key) {
+            case 'all':
+              UI.Draw.AliceChessInfo()
+              break
+            case 'hp':
+              UI.Target.AliceChessInfo.querySelector('.heal>.max').innerText = BATTLE.PVE.Alice.maxHp
+              UI.Target.AliceChessInfo.querySelector('.heal>.value').innerText = BATTLE.PVE.Alice.hp
+              UI.Target.AliceChessInfo.querySelector('.hp').value = BATTLE.PVE.Alice.hp
+              UI.Target.AliceChessInfo.querySelector('.hp').max = BATTLE.PVE.Alice.maxHp
+              break
+            case 'star':
+              let t = ''
+              for (let i = 0; i < 5; i++) {
+                if (i < BATTLE.PVE.Alice.level) {
+                  t += '★'
+                } else {
+                  t += '☆'
+                }
+              }
+              UI.Target.AliceChessInfo.querySelector('.star').innerText = t
+              break
+            default:
+              UI.Target.AliceChessInfo.querySelector(`.${key}`).innerText = BATTLE.PVE.Alice[key]
+              break
+          }
+        },
+        KatyChessInfoChange: function(key) {
+          switch (key) {
+            case 'all':
+              UI.Draw.KatyChessInfo()
+              break
+            case 'hp':
+              UI.Target.KatyChessInfo.querySelector('.heal>.max').innerText = BATTLE.PVE.Katy.maxHp
+              UI.Target.KatyChessInfo.querySelector('.heal>.value').innerText = BATTLE.PVE.Katy.hp
+              UI.Target.KatyChessInfo.querySelector('.hp').value = BATTLE.PVE.Katy.hp
+              UI.Target.KatyChessInfo.querySelector('.hp').max = BATTLE.PVE.Katy.maxHp
+
+              break
+            case 'star':
+              let t = ''
+              for (let i = 0; i < 5; i++) {
+                if (i < BATTLE.PVE.Katy.level) {
+                  t += '★'
+                } else {
+                  t += '☆'
+                }
+              }
+              UI.Target.KatyChessInfo.querySelector('.star').innerText = t
+              break
+            default:
+              UI.Target.KatyChessInfo.querySelector(`.${key}`).innerText = BATTLE.PVE.Katy[key]
+
+              break
+          }
+        },
+        KatyChessInfo: function() {
+          UI.Target.KatyChessInfo.querySelector('.title').innerText = BATTLE.PVE.Katy.name
+          UI.Target.KatyChessInfo.querySelector('.defEle').innerText = Enum.ele.properties[BATTLE.PVE.Katy.defEle].label
+          UI.Target.KatyChessInfo.querySelector('.atk').innerText = BATTLE.PVE.Katy.atk
+          UI.Target.KatyChessInfo.querySelector('.speAtk').innerText = BATTLE.PVE.Katy.speAtk
+          UI.Target.KatyChessInfo.querySelector('.def').innerText = BATTLE.PVE.Katy.def
+          UI.Target.KatyChessInfo.querySelector('.speDef').innerText = BATTLE.PVE.Katy.speDef
+          UI.Target.KatyChessInfo.querySelector('.speed').innerText = BATTLE.PVE.Katy.speed
+          UI.Target.KatyChessInfo.querySelector('.heal>.max').innerText = BATTLE.PVE.Katy.maxHp
+          UI.Target.KatyChessInfo.querySelector('.heal>.value').innerText = BATTLE.PVE.Katy.hp
+          UI.Target.KatyChessInfo.querySelector('.hp').value = BATTLE.PVE.Katy.hp
+          UI.Target.KatyChessInfo.querySelector('.hp').max = BATTLE.PVE.Katy.maxHp
+          UI.Target.KatyChessInfo.querySelector('.ability').innerText = BATTLE.PVE.Katy.ability
+          UI.Target.KatyChessInfo.querySelector('.abilityMax').innerText = BATTLE.PVE.Katy.abilityMax
+          let t = ''
+          for (let i = 0; i < 5; i++) {
+            if (i < BATTLE.PVE.Katy.level) {
+              t += '★'
+            } else {
+              t += '☆'
+            }
+          }
+
+          UI.Target.KatyChessInfo.querySelector('.star').innerText = t
+        },
+        AliceChessListBox: function(index, use) {
+          let t = UI.Target.AliceChessListBox.querySelectorAll('.c-btn')
+          if (index !== undefined) {
+            t[index].querySelector('.name').innerText = BATTLE.PVE.AliceChessList[index].name
+            t[index].querySelector('.hpNum').innerText = BATTLE.PVE.AliceChessList[index].hp + '/' + BATTLE.PVE.AliceChessList[index].maxHp
+            t[index].querySelector('.hp').max = BATTLE.PVE.AliceChessList[index].maxHp
+            t[index].querySelector('.hp').value = BATTLE.PVE.AliceChessList[index].hp
+            if (BATTLE.PVE.AliceChessList[index].hp < 1) {
+              t[index].classList.add('disabled')
+            }
+            switch (use) {
+              case undefined:
+                break
+              case true:
+                t[index].classList.add('active')
+                break
+              case false:
+                t[index].classList.remove('active')
+                break
+            }
+
+          } else {
+            for (let i = 0; i < t.length; i++) {
+              if (i === BATTLE.PVE.AliceIndexC) {
+                t[i].classList.add('choose')
+              } else {
+                t[i].classList.remove('choose')
+              }
+            }
+          }
+
+        },
+        KatyChessListBox: function(index, choose) {
+          let t = UI.Target.KatyChessListBox.querySelectorAll('.c-btn')
+          if (choose) {
+            for (let i = 0; i < t.length; i++) {
+              if (i === index) {
+                t[i].classList.add('choose')
+                t[i].classList.add('active')
+
+              } else {
+                t[i].classList.remove('active')
+                t[i].classList.remove('choose')
+              }
+            }
+          } else {
+
+            t[index].querySelector('.name').innerText = BATTLE.PVE.KatyChessList[index].name
+            t[index].querySelector('.hpNum').innerText = BATTLE.PVE.KatyChessList[index].hp + '/' + BATTLE.PVE.KatyChessList[index].maxHp
+            t[index].querySelector('.hp').max = BATTLE.PVE.KatyChessList[index].maxHp
+            t[index].querySelector('.hp').value = BATTLE.PVE.KatyChessList[index].hp
+            if (BATTLE.PVE.KatyChessList[index].hp < 1) {
+              t[index].classList.add('disabled')
+            }
+          }
+
+        },
+        addSay: function(txt) {
+          let span = document.createElement('span')
+          span.innerHTML = txt
+          UI.Target.infoBox.appendChild(span)
+          UI.Target.infoBox.scrollTop = UI.Target.infoBox.scrollHeight
+        },
+        KatyChessList: function() {
+        }
+      },
+      Mutual: {
+        chooseChess: function(i, e) {
+          BATTLE.PVE.AliceIndexC = i
+          UI.Draw.AliceChessListBox()
+        },
+        sortItem:function(i){
+          if(i){
+             STORE.USER.depository= UI.Target.bench.sortItem(i)
+          }
+          else {
+            STORE.USER.depository=UI.Target.bench.sortItem()
+          }
+        }
+      },
+      INIT: {
+        abilityBar: function() {
+          if (!UI.Target.abilityBar) {
+            console.log(BATTLE.PVE.Alice.abilityMax)
+            console.log(BATTLE.PVE.Alice.ability)
+            UI.Target.abilityBar = KatyLightDiamondsProgressCreate({
+              total: BATTLE.PVE.Alice.abilityMax,
+              value: BATTLE.PVE.Alice.ability,
+              master: document.getElementById('abilityProgress')
+            })
+          } else {
+            UI.Target.abilityBar.setTotal(BATTLE.PVE.Alice.abilityMax)
+            UI.Target.abilityBar.setValue(BATTLE.PVE.Alice.ability)
+          }
+        },
+        controlNav: function() {
+          if (!UI.Target.controlNav) {
+
+            UI.Target.controlNav =new KatyLightNavbar({
+              target: document.querySelector('#controlNav'),
+              dataList: [
+                {
+                  label: '地图',
+                  key: 'map'
+                },
+                {
+                  label: '仓库',
+                  key: 'store'
+                }
+              ],
+              choose: (data) => {
+                console.log(data)
+                VIEW.WINDOW.ACTIVE.SHOW(data.value)
+              }
+            })
+          }
+        }
+      },
+
+    }
+    var BATTLE = {
+      LOCAL: {
+        sTime: 5,
+        road: 0,
+        aliceRoundTimer: null,
+        aliceWaitTimer: null,
+        round: 1,
+        waitRoundC: 0,
+        coin: false,
+        EndGame: false
+      },
+      EVENT: {
+        attacker: null,
+        attacked: null
+      },
+      INIT: {
+        total: function() {
+          BATTLE.LOCAL.EndGame = false
+
+          UI.Target.KatyAbilitySpan.innerText = BATTLE.PVE.Katy.ability
+          UI.Target.AliceHPText.innerText = BATTLE.PVE.Alice.hp
+          UI.Target.KatyHPText.innerText = BATTLE.PVE.Katy.hp
+          BATTLE.PVE.Alice.hp = BATTLE.PVE.Alice.maxHp
+          BATTLE.PVE.Katy.hp = BATTLE.PVE.Katy.maxHp
+          BATTLE.PVE.AliceIndex = 0
+          BATTLE.PVE.KatyIndex = 0
+          let t = '--percent: ' + 100 + ';'
+          UI.Target.AliceHPBar.setAttribute('style', t)
+          UI.Target.AliceHPText.innerText = BATTLE.PVE.Alice.hp
+          UI.Target.KatyHPBar.setAttribute('style', t)
+          UI.Target.KatyHPText.innerText = BATTLE.PVE.Katy.hp
+        },
+        KatyChessList: function() {
+          BATTLE.PVE.KatyChessList = []
+          for (let i = 0; i < BATTLE.PVE.KatyChessListStatic.length; i++) {
+            let chess = Butler.findChessById(BATTLE.PVE.KatyChessListStatic[i].id)
+            let obj = {}
+            Object.keys(chess).forEach(key => {
+              if (key !== 'skills' && key !== 'levelData') {
+                obj[key] = chess[key]
+              }
+            })
+            if (chess['levelData'].pre) {
+              switch (chess['levelData'].pre) {
+                case 'normal':
+                  let ob1 = defaultChessLevelData.normal[0]
+                  Object.keys(ob1).forEach(key => {
+                    obj[key] = ob1[key]
+                  })
+                  for (let j = 1; j < BATTLE.PVE.KatyChessListStatic[i].level; j++) {
+                    ob1 = defaultChessLevelData.normal[j]
+                    Object.keys(ob1).forEach(key => {
+                      obj[key] += ob1[key]
+                    })
+                  }
+
+                  break
+              }
+            } else {
+              let ob1 = chess['levelData'].list[0]
+              Object.keys(ob1).forEach(key => {
+                obj[key] = ob1[key]
+              })
+              for (let j = 1; j < BATTLE.PVE.KatyChessListStatic[i].level; j++) {
+                ob1 = chess['levelData'].list[j]
+                Object.keys(ob1).forEach(key => {
+                  obj[key] += ob1[key]
+                })
+              }
+            }
+
+            obj.hp = obj.maxHp
+            obj.camp = 1
+            obj.level = BATTLE.PVE.KatyChessListStatic[i].level
+            BATTLE.PVE.KatyChessList.push(obj)
+          }
+
+          BATTLE.PVE.Katy = BATTLE.PVE.KatyChessList[0]
+        },
+        AliceChessList: function() {
+          BATTLE.PVE.AliceChessList = [...STORE.USER.chessDepository]
+
+          for (let i = 0; i < BATTLE.PVE.AliceChessList.length; i++) {
+            BATTLE.PVE.AliceChessList[i].hp = BATTLE.PVE.AliceChessList[i].maxHp
+            BATTLE.PVE.AliceChessList[i].camp = 0
+            BATTLE.PVE.AliceChessList[i].ability = BATTLE.PVE.AliceChessList[i].abilityStart
+          }
+          console.log(BATTLE.PVE.AliceChessList)
+          /*          for (let i = 0; i < BATTLE.PVE.AliceChessListStatic.length; i++) {
+                      let chess = Butler.findChessById(BATTLE.PVE.AliceChessListStatic[i].id)
+                      let obj = {}
+                      Object.keys(chess).forEach(key => {
+                        if (key !== 'skills' && key !== 'levelData') {
+                          obj[key] = chess[key]
+                        }
+                      })
+                      if (chess['levelData'].pre) {
+                        switch (chess['levelData'].pre) {
+                          case 'normal':
+                            let ob1 = defaultChessLevelData.normal[0]
+                            Object.keys(ob1).forEach(key => {
+                              obj[key] = ob1[key]
+                            })
+                            for (let j = 1; j < BATTLE.PVE.AliceChessListStatic[i].level; j++) {
+                              ob1 = defaultChessLevelData.normal[j]
+                              Object.keys(ob1).forEach(key => {
+                                obj[key] += ob1[key]
+                              })
+                            }
+
+                            break
+                        }
+                      } else {
+                        let ob1 = chess['levelData'].list[0]
+                        Object.keys(ob1).forEach(key => {
+                          obj[key] = ob1[key]
+                        })
+                        for (let j = 1; j < BATTLE.PVE.AliceChessListStatic[i].level; j++) {
+                          ob1 = chess['levelData'].list[j]
+                          Object.keys(ob1).forEach(key => {
+                            obj[key] += ob1[key]
+                          })
+                        }
+                      }
+                      obj.hp = obj.maxHp
+                      obj.camp = 0
+                      obj.level = BATTLE.PVE.AliceChessListStatic[i].level
+                      BATTLE.PVE.AliceChessList.push(obj)
+                    }*/
+          BATTLE.PVE.Alice = BATTLE.PVE.AliceChessList[0]
+          console.log(BATTLE.PVE.AliceChessList)
+        },
+        KatySkillsInit: function() {
+          BATTLE.PVE.KatySkills = [...Butler.findChessById(BATTLE.PVE.KatyChessListStatic[BATTLE.PVE.KatyIndex].id).skills]
+        },
+        AliceSkillsInit: function() {
+          let t = ''
+          BATTLE.PVE.AliceSkills = [...Butler.findChessById(BATTLE.PVE.AliceChessListStatic[BATTLE.PVE.AliceIndex].id).skills]
+          for (let i = 0; i < BATTLE.PVE.AliceSkills.length; i++) {
+            let Skill = Butler.findSkillsById(BATTLE.PVE.AliceSkills[i])
+            let cla = 'k-btn '
+            switch (Skill.type) {
+              case Enum.ele.WATER:
+                cla += 'blue'
+                break
+              case Enum.ele.FIRE:
+                cla += 'coralRed'
+                break
+              case Enum.ele.EARTH:
+                cla += 'brown'
+                break
+              case Enum.ele.WIND:
+                cla += 'seaGreen'
+                break
+              case Enum.ele.NORMAL:
+                cla += 'orange'
+                break
+            }
+
+            if (Skill.role) {
+              t += `<button class="${cla}" onclick="BATTLE.DO.skillSpellAttack(event)" data-id="${Skill.id}">${Skill.name}</button>`
+            } else {
+              t += `<button class="${cla}" onclick="BATTLE.DO.skillSpellAttribute(event)" data-id="${Skill.id}">${Skill.name}</button>`
+            }
+          }
+          document.getElementById('AliceSkillBox').innerHTML = t
+        },
+        AliceChessListBoxInit: function() {
+          let t = ''
+          for (let i = 0; i < BATTLE.PVE.AliceChessList.length; i++) {
+            t += ` <div data-id="${BATTLE.PVE.AliceChessList[i].id}" class="c-btn ${i === BATTLE.PVE.AliceIndexC ? 'choose' : ''}" onclick="UI.Mutual.chooseChess(${i},BATTLE.EVENT)">
+        <div class="name">${BATTLE.PVE.AliceChessList[i].name}</div>
+        <div  class="hpNum">${BATTLE.PVE.AliceChessList[i].hp}/${BATTLE.PVE.AliceChessList[i].maxHp}</div>
+        <progress class="hp" value="${BATTLE.PVE.AliceChessList[i].hp}" max="${BATTLE.PVE.AliceChessList[i].maxHp}"></progress>
+        <div class="info">
+          <div class="title min">${BATTLE.PVE.AliceChessList[i].name}</div>
+          <p>${BATTLE.PVE.AliceChessList[i].content}</p>
+        </div>
+      </div>`
+          }
+
+          UI.Target.AliceChessListBox.innerHTML = t
+          let node = UI.Target.AliceChessListBox.querySelectorAll('.c-btn')
+          node[0].classList.add('active')
+        },
+        KatyAIInit: function() {
+          let k = 0
+          BATTLE.PVE.KatySkills.forEach(item => {
+            k = k > Butler.findSkillsById(item).ability ? k : Butler.findSkillsById(item).ability
+          })
+          BATTLE.AI.katyHideAidATA.maxAbSkillNum = k
+        },
+        KatyChessListBoxInit: function() {
+          let t = ''
+          for (let i = 0; i < BATTLE.PVE.KatyChessList.length; i++) {
+            t += ` <div data-id="${BATTLE.PVE.KatyChessList[i].id}" class="c-btn ${i === BATTLE.PVE.KatyIndex ? 'choose' : ''}"  >
+        <div class="name">${BATTLE.PVE.KatyChessList[i].name}</div>
+        <div  class="hpNum">${BATTLE.PVE.KatyChessList[i].hp}/${BATTLE.PVE.KatyChessList[i].maxHp}</div>
+        <progress class="hp" value="${BATTLE.PVE.KatyChessList[i].hp}" max="${BATTLE.PVE.KatyChessList[i].maxHp}"></progress>
+        <div class="info">
+          <div class="title min">${BATTLE.PVE.KatyChessList[i].name}</div>
+          <p>${BATTLE.PVE.KatyChessList[i].content}</p>
+        </div>
+      </div>`
+
+          }
+          UI.Target.KatyChessListBox.innerHTML = t
+          UI.Draw.KatyChessListBox(BATTLE.PVE.KatyIndex, true)
+
+        }
+
+      },
+      ROUND: {
+        START() {
+          let k = BATTLE.PVE.Alice.speed - BATTLE.PVE.Katy.speed
+          if (k > 0) {
+            BATTLE.LOCAL.coin = true
+          } else {
+            BATTLE.LOCAL.coin = k >= 0
+          }
+          BATTLE.ROUND.Round()
+
+        },
+        recoverAbilityBout: function(target) {
+          target.ability += target.abilityBout
+          target.ability = target.ability < target.abilityMax ? target.ability : target.abilityMax
+          UI.Draw.setAbilityProgress(BATTLE.EVENT.attacker)
+        },
+        endRound: function() {
+          BATTLE.TRIGGER.endRound()
+          setTimeout(() => {
+            BATTLE.ROUND.recoverAbilityBout(BATTLE.EVENT.attacker)
+            BATTLE.ROUND.Round()
+          }, 200)
+
+        },
+        endBattle: function(rs) {
+          console.log('这一场战斗结束')
+          BATTLE.LOCAL.round=0;
+          UI.Target.infoBox.innerHTML='';
+          console.log(UI.Target.infoBox)
+          if (rs) {
+
+            VIEW.WINDOW.ACTIVE.SHOW('map')
+          } else {
+            MAP.INIT.clear()
+            MAP.INIT.create()
+            VIEW.WINDOW.ACTIVE.SHOW('map')
+            console.log('游戏失败！重开！')
+          }
+        },
+        beginRound: function() {
+          BATTLE.TRIGGER.beginRound()/*是上一个攻击者的恢复体力*/
+          /*          BATTLE.ROUND.recoverAbilityBout(BATTLE.EVENT.attacker)
+                    UI.Draw.setAbilityProgress(BATTLE.EVENT.attacker)*/
+        },
+        Round: function() {
+          if (BATTLE.LOCAL.EndGame) {
+            UI.Draw.addSay(`游戏结束！<br/>`)
+            return
+          }
+           UI.Draw.addSay(`第【${BATTLE.LOCAL.round}】回合<br/>`)
+
+          // BATTLE.LOCAL.coin 为true，是玩家回合
+
+          // BATTLE.LOCAL.coin = !BATTLE.LOCAL.coin
+          //BATTLE.PVE.Alice.speed
+          let k = BATTLE.PVE.Alice.speed - BATTLE.PVE.Katy.speed
+          /* if (
+             BATTLE.LOCAL.coin
+           ) {
+             BATTLE.EVENT.attacker = BATTLE.PVE.Alice
+             BATTLE.EVENT.attacked = BATTLE.PVE.Katy
+           } else {
+             BATTLE.EVENT.attacker = BATTLE.PVE.Katy
+             BATTLE.EVENT.attacked = BATTLE.PVE.Alice
+           }*/
+          /*          if (k > 0) {
+                      BATTLE.LOCAL.coin = true
+                    } else if (k < 0) {
+                      BATTLE.LOCAL.coin = false
+                    } else {
+                      BATTLE.LOCAL.coin = true
+
+                    }*/
+
+          if (k < 0) {
+            k = -k
+
+            //速度差高于弱势单位时
+            if (k > BATTLE.PVE.Alice.speed) {
+              BATTLE.LOCAL.road += BATTLE.PVE.Alice.speed
+              if (BATTLE.LOCAL.road > BATTLE.PVE.Katy.speed) {
+                BATTLE.LOCAL.road = 0
+                console.log('终于轮到BATTLE.PVE.Alice的回合')
+                this.AliceGo()
+              } else {
+                console.log('BATTLE.PVE.Katy的回合')
+                this.KatyGo()
+              }
+              //没有
+            } else {
+              BATTLE.LOCAL.road += k
+              if (BATTLE.LOCAL.road > BATTLE.PVE.Alice.speed) {
+                BATTLE.LOCAL.road = 0
+                console.log('BATTLE.PVE.Katy的额外回合')
+                this.KatyGo()
+              } else {
+                if (BATTLE.LOCAL.coin) {
+                  console.log('BATTLE.PVE.Alice的回合')
+                  this.AliceGo()
+                } else {
+                  console.log('BATTLE.PVE.Alice的回合')
+                  this.AliceGo()
+                }
+                BATTLE.LOCAL.coin = !BATTLE.LOCAL.coin
+              }
+            }
+          } else if (k > 0) {
+
+            //速度差高于弱势单位时
+            if (k > BATTLE.PVE.Katy.speed) {
+              BATTLE.LOCAL.road += BATTLE.PVE.Katy.speed
+              if (BATTLE.LOCAL.road > BATTLE.PVE.Alice.speed) {
+                road = 0
+                console.log('终于轮到BATTLE.PVE.Katy的回合')
+                this.KatyGo()
+              } else {
+                console.log('BATTLE.PVE.Alice的回合')
+                this.AliceGo()
+              }
+              //没有
+            } else {
+              BATTLE.LOCAL.road += k
+              if (BATTLE.LOCAL.road > BATTLE.PVE.Katy.speed) {
+                road = 0
+                console.log('BATTLE.PVE.Alice的额外回合')
+                this.AliceGo()
+              } else {
+                if (BATTLE.LOCAL.coin) {
+                  console.log('BATTLE.PVE.Alice的回合')
+                  this.AliceGo()
+                } else {
+                  console.log('BATTLE.PVE.Katy的回合')
+                  this.KatyGo()
+                }
+                BATTLE.LOCAL.coin = !BATTLE.LOCAL.coin
+              }
+            }
+          } else {
+            if (BATTLE.LOCAL.coin) {
+              console.log('BATTLE.PVE.Alice的回合')
+              this.AliceGo()
+            } else {
+              console.log('BATTLE.PVE.Katy的回合')
+              this.KatyGo()
+            }
+            BATTLE.LOCAL.coin = !BATTLE.LOCAL.coin
+          }
+          BATTLE.LOCAL.round++//这个是经过的所有回合
+
+        },
+        KatyGo() {
+
+          if (BATTLE.PVE.Alice.hp < 1) {
+            let live = BATTLE.CHECK.checkAliceAllChessLives()
+            if (live) {
+              UI.Draw.AliceChessListBox(BATTLE.PVE.AliceIndex)
+              UI.Target.msgBox.info('请玩家选择其他棋子上场！')
+              BATTLE.LOCAL.sTime = 20
+              BATTLE.LOCAL.waitRoundC = 1
+              UI.Target.aliceRoundTimerView.classList.remove('hide')
+              BATTLE.LOCAL.aliceWaitTimer = setInterval(() => {
+                BATTLE.LOCAL.sTime--
+                if (BATTLE.LOCAL.sTime < 0) {
+                  clearInterval(BATTLE.LOCAL.aliceWaitTimer)
+                  BATTLE.LOCAL.aliceWaitTimer = null
+                  UI.Target.aliceRoundTimerView.classList.add('hide')
+                  BATTLE.DO.AliceAutoChoose().then(() => {
+                    BATTLE.ROUND.waitRound()
+                  })
+                } else {
+                  UI.Target.aliceRoundTimerView.innerText = BATTLE.LOCAL.sTime
+                }
+              }, 1000)
+            } else {
+              BATTLE.LOCAL.EndGame = true
+              UI.Target.msgBox.error('你被打败了！')
+              UI.Draw.addSay(`<span class="red light">玩家失败，结束游戏！！！！</span><br/>`)
+              BATTLE.ROUND.endBattle(false)
+            }
+          } else if (BATTLE.PVE.Katy.hp < 1) {
+            BATTLE.LOCAL.sTime = 3
+            // UI.Target.aliceRoundTimerView.innerText = BATTLE.LOCAL.sTime
+            let live = BATTLE.CHECK.checkKatyAllChessLives()
+            if (live) {
+              setTimeout(() => {
+                BATTLE.AI.AutoChoose().then(() => {
+                  // BATTLE.EVENT.attacker = BATTLE.PVE.Katy
+                  BATTLE.AI.Run()
+                })
+              }, 200)
+            } else {
+              BATTLE.LOCAL.EndGame = true
+              UI.Target.msgBox.yellow('你赢了！')
+              UI.Draw.addSay(`<span class="red light">你赢了！！！！</span><br/>`)
+              BATTLE.ROUND.endBattle(true)
+            }
+          } else {
+            // BATTLE.EVENT.attacker = BATTLE.PVE.Katy
+            BATTLE.AI.Run()
+          }
+          BATTLE.ROUND.beginRound()
+        },
+        AliceGo() {
+
+          if (BATTLE.PVE.Alice.hp < 1) {
+
+            let live = BATTLE.CHECK.checkAliceAllChessLives()
+            if (live) {
+              UI.Draw.AliceChessListBox(BATTLE.PVE.AliceIndex)
+              UI.Target.msgBox.info('请玩家选择其他棋子上场！')
+              BATTLE.LOCAL.waitRoundC = 0
+              BATTLE.LOCAL.sTime = 20
+              UI.Target.aliceRoundTimerView.innerText = BATTLE.LOCAL.sTime
+              UI.Target.aliceRoundTimerView.classList.remove('hide')
+              BATTLE.LOCAL.aliceWaitTimer = setInterval(() => {
+                BATTLE.LOCAL.sTime--
+                if (BATTLE.LOCAL.sTime < 0) {
+                  clearInterval(BATTLE.LOCAL.aliceWaitTimer)
+                  BATTLE.LOCAL.aliceWaitTimer = null
+                  UI.Target.aliceRoundTimerView.classList.add('hide')
+                  BATTLE.DO.AliceAutoChoose().then(() => {
+                    BATTLE.ROUND.waitRound()
+                  })
+                } else {
+                  UI.Target.aliceRoundTimerView.innerText = BATTLE.LOCAL.sTime
+                }
+              }, 1000)
+            } else {
+              BATTLE.LOCAL.EndGame = true
+              UI.Target.msgBox.error('你被打败了！')
+              UI.Draw.addSay(`<span class="red light">玩家失败，结束游戏！！！！</span><br/>`)
+              BATTLE.ROUND.endBattle(false)
+            }
+
+          } else {
+            // BATTLE.EVENT.attacker = BATTLE.PVE.Alice
+            BATTLE.ROUND.AliceRun()
+          }
+          if (BATTLE.PVE.Katy.hp < 1) {
+            let live = BATTLE.CHECK.checkKatyAllChessLives()
+            if (live) {
+              setTimeout(() => {
+                BATTLE.AI.AutoChoose().then(() => {
+                  // BATTLE.EVENT.attacker = BATTLE.PVE.Katy
+                  BATTLE.AI.Run()
+                })
+              }, 700)
+            } else {
+              BATTLE.LOCAL.EndGame = true
+              UI.Target.msgBox.yellow('你赢了！')
+              UI.Draw.addSay(`<span class="red light">你赢了！！！！</span><br/>`)
+              BATTLE.ROUND.endBattle(true)
+            }
+          }
+          BATTLE.ROUND.beginRound()
+        },
+        waitRound: function() {
+          if (BATTLE.LOCAL.waitRoundC === 0) {
+            BATTLE.EVENT.attacker = BATTLE.PVE.Alice
+            BATTLE.EVENT.attacked = BATTLE.PVE.Katy
+            BATTLE.ROUND.AliceRun()
+          } else if (BATTLE.LOCAL.waitRoundC === 1) {
+            BATTLE.EVENT.attacker = BATTLE.PVE.Katy
+            BATTLE.EVENT.attacked = BATTLE.PVE.Alice
+            //这个是在玩家被打死的情况触发
+            BATTLE.AI.Run()
+          }
+        },
+        AliceRun: function() {
+          UI.Draw.addSay(`------玩家回合！<br/>`)
+          BATTLE.EVENT.attacker = BATTLE.PVE.Alice
+          BATTLE.EVENT.attacked = BATTLE.PVE.Katy
+          UI.Target.msgBox.info('玩家回合……')
+          BATTLE.LOCAL.sTime = 15
+          UI.Target.aliceRoundTimerView.innerText = BATTLE.LOCAL.sTime
+          UI.Target.aliceRoundTimerView.classList.remove('hide')
+          BATTLE.LOCAL.aliceRoundTimer = setInterval(() => {
+            BATTLE.LOCAL.sTime--
+            if (BATTLE.LOCAL.sTime < 0) {
+              clearInterval(BATTLE.LOCAL.aliceRoundTimer)
+              BATTLE.LOCAL.aliceRoundTimer = null
+              UI.Target.aliceRoundTimerView.classList.add('hide')
+              BATTLE.DO.skillSpellAttack3().then(() => {
+                BATTLE.ROUND.endRound()
+              })
+            } else {
+              UI.Target.aliceRoundTimerView.innerText = BATTLE.LOCAL.sTime
+            }
+          }, 1000)
+        }
+      },
+      DO: {
+        hurt: function(source, target, damage, type, role) {
+          let hurt = damage
+          let r = 0
+          let typeInfo = ''//微弱还是克制还是普通
+          if
+          (
+            (target.defEle === Enum.ele.WATER && type === Enum.ele.EARTH) ||
+            (target.defEle === Enum.ele.WATER && type === Enum.ele.ICE) ||
+            (target.defEle === Enum.ele.WATER && type === Enum.ele.LIGHT) ||
+            (target.defEle === Enum.ele.FIRE && type === Enum.ele.WATER) ||
+            (target.defEle === Enum.ele.FIRE && type === Enum.ele.DARK) ||
+            (target.defEle === Enum.ele.FIRE && type === Enum.ele.EARTH) ||
+            (target.defEle === Enum.ele.EARTH && type === Enum.ele.WIND) ||
+            (target.defEle === Enum.ele.EARTH && type === Enum.ele.DARK) ||
+            (target.defEle === Enum.ele.EARTH && type === Enum.ele.HERB) ||
+            (target.defEle === Enum.ele.WIND && type === Enum.ele.FIRE) ||
+            (target.defEle === Enum.ele.WIND && type === Enum.ele.ELECTRIC) ||
+            (target.defEle === Enum.ele.WIND && type === Enum.ele.DARK) ||
+            (target.defEle === Enum.ele.HERB && type === Enum.ele.FIRE) ||
+            (target.defEle === Enum.ele.HERB && type === Enum.ele.ICE) ||
+            (target.defEle === Enum.ele.HERB && type === Enum.ele.STEEL) ||
+            (target.defEle === Enum.ele.HERB && type === Enum.ele.DARK) ||
+            (target.defEle === Enum.ele.ICE && type === Enum.ele.FIRE) ||
+            (target.defEle === Enum.ele.ICE && type === Enum.ele.EARTH) ||
+            (target.defEle === Enum.ele.ICE && type === Enum.ele.HERB) ||
+            (target.defEle === Enum.ele.ELECTRIC && type === Enum.ele.EARTH) ||
+            (target.defEle === Enum.ele.ELECTRIC && type === Enum.ele.HERB) ||
+            (target.defEle === Enum.ele.ELECTRIC && type === Enum.ele.DARK) ||
+            (target.defEle === Enum.ele.STEEL && type === Enum.ele.ELECTRIC) ||
+            (target.defEle === Enum.ele.STEEL && type === Enum.ele.DARK) ||
+            (target.defEle === Enum.ele.LIGHT && type === Enum.ele.DARK) ||
+            (target.defEle === Enum.ele.LIGHT && type === Enum.ele.HERB) ||
+            (target.defEle === Enum.ele.LIGHT && type === Enum.ele.EARTH) ||
+            (target.defEle === Enum.ele.DARK && type === Enum.ele.LIGHT) ||
+            (target.defEle === Enum.ele.DARK && type === Enum.ele.WATER) ||
+            (target.defEle === Enum.ele.DARK && type === Enum.ele.ELECTRIC)
+          ) {
+            typeInfo = '克制'
+            r = 1
+            hurt *= 2
+          } else if (
+            (target.defEle === Enum.ele.PSYCHIC && type === Enum.ele.DARK) ||
+            (target.defEle === Enum.ele.PSYCHIC && type === Enum.ele.LIGHT)
+          ) {
+            typeInfo = '克制'
+            r = 1
+            hurt *= 3
+          } else if (
+            (target.defEle === Enum.ele.WATER && type === Enum.ele.PSYCHIC) ||
+            (target.defEle === Enum.ele.FIRE && type === Enum.ele.PSYCHIC) ||
+            (target.defEle === Enum.ele.EARTH && type === Enum.ele.PSYCHIC) ||
+            (target.defEle === Enum.ele.WIND && type === Enum.ele.PSYCHIC) ||
+            (target.defEle === Enum.ele.HERB && type === Enum.ele.PSYCHIC) ||
+            (target.defEle === Enum.ele.ICE && type === Enum.ele.PSYCHIC) ||
+            (target.defEle === Enum.ele.ELECTRIC && type === Enum.ele.PSYCHIC) ||
+            (target.defEle === Enum.ele.STEEL && type === Enum.ele.PSYCHIC)
+          ) {
+            typeInfo = '克制'
+            r = 1
+            hurt *= 1.6
+          } else if (
+            (target.defEle === Enum.ele.EARTH && type === Enum.ele.WATER) ||
+            (target.defEle === Enum.ele.WATER && type === Enum.ele.FIRE) ||
+            (target.defEle === Enum.ele.WIND && type === Enum.ele.EARTH) ||
+            (target.defEle === Enum.ele.FIRE && type === Enum.ele.WIND)
+          ) {
+            typeInfo = '微弱'
+            r = 2
+            hurt *= 0.5
+          } else {
+            typeInfo = '平常'
+          }
+          let typeClass = ''
+          switch (type) {
+            case Enum.ele.WATER:
+              typeClass = 'blue'
+
+              break
+            case Enum.ele.FIRE:
+              typeClass = 'coralRed'
+
+              break
+            case Enum.ele.EARTH:
+              typeClass = 'brown'
+
+              break
+            case Enum.ele.WIND:
+              typeClass = 'seaGreen'
+
+              break
+            case Enum.ele.NORMAL:
+              typeClass = 'orange'
+
+              break
+          }
+
+          switch (r) {
+            case 1:
+              r = 'red light'
+
+              break
+            case 2:
+              r = 'skyBlue light'
+              break
+            case 0:
+              r = 'orange'
+
+              break
+          }
+
+          switch (role) {
+            case 1:
+              hurt -= target.def
+              break
+            case 2:
+              hurt -= target.speDef
+              break
+            default:
+              hurt -= target.def
+              break
+          }
+          if (hurt < 1) {
+            UI.Draw.addSay(`<span class=" ${source.camp===0?'darkCyan':'darkSlateblue'}">【${source.name}】</span>没有能够使<span class="${target.camp===0?'darkCyan':'darkSlateblue'}">【${target.name}】</span> 破防，伤害无效 <br/>`)
+
+          } else {
+            hurt *= 10
+            target.hp -= hurt
+            UI.Draw.addSay(`<span class="${target.camp===0?'darkCyan':'darkSlateblue'}">【${target.name}】</span>收到来自于<span class="${source.camp===0?'darkCyan':'darkSlateblue'}">【${source.name}】</span><span class="${typeClass}">【${Enum.ele.properties[type].label}】</span>的<span class="${r}">【${typeInfo}】</span><span class="coralRed">【${hurt}】</span>伤害<br/>`)
+            target.hp = target.hp > -1 ? target.hp : 0
+            let p = Math.floor(target.hp / target.maxHp * 100)
+            if (p < 0) {
+              p = 0
+            }
+            if (p > 100) {
+              p = 100
+            }
+            if (target.camp === 1) {
+              UI.Draw.KatyHPBar(p)
+              UI.Draw.KatyChessInfoChange('hp')
+            } else {
+              UI.Draw.AliceHPBar(p)
+              UI.Draw.AliceChessInfoChange('hp')
+            }
+          }
+
+          // UI.Draw.addSay(`<span class="darkCyan">【${target.name}】</span>的生命值为：<span class="green">【${target.hp}】</span><br/>`);
+        },
+        doActive: function(id) {
+          switch (id) {
+            case 'ESCAPE':
+              UI.Draw.addSay(` <strong class="violet">不准逃跑！！！</strong><br/>`)
+              break
+            case 'CHANGE':
+              if (BATTLE.PVE.AliceIndex === BATTLE.PVE.AliceIndexC) {
+                UI.Target.msgBox.warn('重复选择棋子！')
+              } else {
+                if (BATTLE.PVE.AliceChessList[BATTLE.PVE.AliceIndexC].hp < 1) {
+                  UI.Target.msgBox.error('该棋子生命值为0！')
+                  return
+                }
+                UI.Draw.AliceChessListBox(BATTLE.PVE.AliceIndex, false)
+                BATTLE.PVE.AliceIndex = BATTLE.PVE.AliceIndexC
+                UI.Draw.AliceChessListBox(BATTLE.PVE.AliceIndex, true)
+                BATTLE.PVE.Alice = BATTLE.PVE.AliceChessList[BATTLE.PVE.AliceIndex]
+                UI.Draw.addSay(`<span class="darkCyan">【${BATTLE.PVE.Alice.name}】</span>上场了`)
+                UI.Draw.setAbilityProgress(BATTLE.PVE.Alice, true)
+                let p = Math.floor(BATTLE.PVE.Alice.hp / BATTLE.PVE.Alice.maxHp * 100)
+                let t = '--percent: ' + p + ';'
+                UI.Target.AliceHPBar.setAttribute('style', t)
+                UI.Target.AliceHPText.innerText = BATTLE.PVE.Alice.hp
+                UI.Draw.AliceChessInfoChange('all')
+                BATTLE.INIT.AliceSkillsInit()
+                if (BATTLE.LOCAL.aliceWaitTimer) {
+                  UI.Target.msgBox.info('选了，选了')
+                  clearTimeout(BATTLE.LOCAL.aliceWaitTimer)
+                  BATTLE.LOCAL.aliceWaitTimer = null
+                  BATTLE.ROUND.waitRound()
+
+                  UI.Target.aliceRoundTimerView.classList.add('hide')
+                  UI.Target.aliceRoundTimerView.innerText = 0
+                }
+              }
+
+              break
+            case 'SKIP':
+
+              if (BATTLE.LOCAL.aliceRoundTimer) {
+                UI.Draw.addSay(`<strong class="skyBlue">玩家主动跳过</strong><br/>`)
+                clearInterval(BATTLE.LOCAL.aliceRoundTimer)
+                BATTLE.LOCAL.aliceRoundTimer = null
+                BATTLE.ROUND.endRound();
+
+              } else if (BATTLE.LOCAL.aliceWaitTimer) {
+                UI.Target.msgBox.info('请选择棋子上场')
+              } else {
+                UI.Target.msgBox.info('还没有到你的回合')
+              }
+              UI.Draw.AliceChessInfo('ability')
+              UI.Draw.AliceChessInfo('abilityMax')
+              UI.Draw.KatyChessInfo('ability')
+              UI.Draw.KatyChessInfo('abilityMax')
+              break
+            case 'PROP':
+              break
+          }
+
+        },
+        AliceAutoChoose: function() {
+          return new Promise((resolve, reject) => {
+            for (let i = 0; i < BATTLE.PVE.AliceChessList.length; i++) {
+              if (BATTLE.PVE.AliceChessList[i].hp > 0) {
+                UI.Draw.AliceChessListBox(BATTLE.PVE.AliceIndex, false)
+                BATTLE.PVE.AliceIndex = i
+                BATTLE.PVE.Alice = BATTLE.PVE.AliceChessList[i]
+                UI.Draw.AliceChessListBox(BATTLE.PVE.AliceIndex, true)
+                UI.Draw.addSay(`<span class="darkCyan">【${BATTLE.PVE.Alice.name}】</span>上场了`)
+                UI.Draw.setAbilityProgress(BATTLE.PVE.Alice, true)
+                let p = Math.floor(BATTLE.PVE.Alice.hp / BATTLE.PVE.Alice.maxHp * 100)
+                let t = '--percent: ' + p + ';'
+                UI.Target.AliceHPBar.setAttribute('style', t)
+                UI.Target.AliceHPText.innerText = BATTLE.PVE.Alice.hp
+                BATTLE.INIT.AliceSkillsInit()
+                resolve()
+              }
+            }
+          })
+        },
+        skillSpellAttack3: function() {
+          return new Promise((resolve, reject) => {
+            for (let i = 0; i < BATTLE.PVE.AliceSkills.length; i++) {
+              let skill = Butler.findSkillsById(BATTLE.PVE.AliceSkills[i])
+              if (skill.ability < BATTLE.EVENT.attacker.ability) {
+                UI.Draw.addSay(`玩家使用了技能：<span class="violet">【${skill.name}】</span><br/>`)
+                BATTLE.EVENT.attacker.ability -= skill.ability
+                UI.Draw.setAbilityProgress(BATTLE.EVENT.attacker)
+                eval(skill.action)
+                UI.Draw.AliceChessInfo('ability')
+                UI.Draw.AliceChessInfo('abilityMax')
+
+                resolve()
+                return
+              }
+
+            }
+            UI.Draw.addSay(`玩家没有行动点，只能跳过！<br/>`)
+            resolve()
+          })
+
+        },
+        skillSpellAttack: function(e) {
+          let skill = Butler.findSkillsById(e.target.dataset.id)
+          if (BATTLE.EVENT.attacker.ability < skill.ability) {
+            UI.Target.msgBox.warn('无法释放，行动力不够！')
+          } else {
+
+            if (BATTLE.LOCAL.aliceRoundTimer) {
+              BATTLE.TRIGGER.launchAttack()
+              BATTLE.EVENT.attacker.ability -= skill.ability
+              UI.Draw.setAbilityProgress(BATTLE.EVENT.attacker)
+              UI.Draw.addSay(`玩家使用了技能：<span class="violet">【${skill.name}】</span><br/>`)
+              eval(skill.action)
+              clearInterval(BATTLE.LOCAL.aliceRoundTimer)
+              BATTLE.LOCAL.aliceRoundTimer = null
+              BATTLE.ROUND.endRound()
+              UI.Draw.AliceChessInfo('ability')
+              UI.Draw.AliceChessInfo('abilityMax')
+            } else {
+              if (BATTLE.LOCAL.aliceWaitTimer) {
+                UI.Target.msgBox.info('请更换你的棋子')
+
+              } else {
+                UI.Target.msgBox.info('还没有到你的回合')
+
+              }
+            }
+          }
+
+        },
+        skillSpellAttribute: function() {
+          BATTLE.TRIGGER.launchAttribute()
+        }
+      },
+      AI: {
+        AutoChoose: function() {
+          return new Promise((resolve, reject) => {
+            for (let i = 0; i < BATTLE.PVE.KatyChessList.length; i++) {
+              if (BATTLE.PVE.KatyChessList[i].hp > 0) {
+                BATTLE.PVE.KatyIndex = i
+                BATTLE.PVE.Katy = BATTLE.PVE.KatyChessList[i]
+                let p = Math.floor(BATTLE.PVE.Katy.hp / BATTLE.PVE.Katy.maxHp * 100)
+                let t = '--percent: ' + p + ';'
+                UI.Target.KatyHPBar.setAttribute('style', t)
+                UI.Target.KatyHPText.innerText = BATTLE.PVE.Katy.hp
+                BATTLE.INIT.KatySkillsInit()
+                UI.Draw.AliceChessInfoChange('all')
+                UI.Draw.addSay(`<span class="darkCyan">【${BATTLE.PVE.Katy.name}】</span>上场了`)
+                UI.Draw.KatyChessListBox(BATTLE.PVE.KatyIndex, true)
+                UI.Draw.KatyChessInfoChange('all')
+                resolve()
+              }
+            }
+          })
+
+        },
+        SkillSpell: function(index) {
+          let skill = Butler.findSkillsById(BATTLE.PVE.KatySkills[index])
+          UI.Draw.KatyChessInfo('ability')
+          UI.Draw.KatyChessInfo('abilityMax')
+          UI.Draw.addSay(`电脑使用了技能：<span class="violet">【${skill.name}】</span><br/>`)
+          eval(skill.action)
+        },
+        katyHideAidATA: {
+          maxAbSkillNum: 0
+        },
+        Run: function() {
+          BATTLE.EVENT.attacker = BATTLE.PVE.Katy
+          BATTLE.EVENT.attacked = BATTLE.PVE.Alice
+          UI.Target.msgBox.info('电脑思考中……')
+          UI.Draw.addSay(`------电脑回合！<br/>`)
+
+          setTimeout(() => {
+            if (BATTLE.PVE.Katy.ability > BATTLE.AI.katyHideAidATA.maxAbSkillNum) {
+              let k = Math.floor(Math.random() * 4)
+              BATTLE.PVE.Katy.ability -= Butler.findSkillsById(BATTLE.PVE.KatySkills[k]).ability
+              UI.Draw.setAbilityProgress(BATTLE.EVENT.attacker)
+              BATTLE.AI.SkillSpell(k)
+              BATTLE.ROUND.endRound()
+            } else {
+              for (let i = 0; i < BATTLE.PVE.KatySkills.length; i++) {
+                let ab = BATTLE.PVE.Katy.ability - Butler.findSkillsById(BATTLE.PVE.KatySkills[i]).ability
+                if (ab > -1) {
+                  BATTLE.PVE.Katy.ability = ab
+                  UI.Draw.setAbilityProgress(BATTLE.EVENT.attacker)
+                  BATTLE.AI.SkillSpell(i)
+                  BATTLE.ROUND.endRound()
+                  return
+                }
+              }
+              UI.Draw.addSay(`<span class="skyBlue">电脑已经疲劳，跳过</span><br/>`)
+              UI.Draw.KatyChessInfo('ability')
+              UI.Draw.KatyChessInfo('abilityMax')
+              BATTLE.ROUND.endRound()
+            }
+          }, 66)
+        }
+      },
+      TRIGGER: {
+        buffCheck: function() {
+        },
+
+        launchAttack: function() {
+        },
+
+        beforeInjury: function() {
+        },
+
+        afterInjury: function() {
+        },
+
+        launchAttribute: function() {
+        },
+        endRound: function() {
+        },
+        beginRound: function() {
+        }
+      },
+      PVE: {
+        AliceChessListStatic: [{
+          id: 'C001',
+          level: 1
+        }/*, {
+          id: 'C002',
+          level: 2
+        }, {
+          id: 'C005',
+          level: 2
+        }, {
+          id: 'C001',
+          level: 2
+        }, {
+          id: 'C002',
+          level: 2
+        }, {
+          id: 'C005',
+          level: 2
+        }*/],//非实例对象！
+        KatyChessListStatic: [{
+          id: 'C003',
+          level: 1
+        }, {
+          id: 'C004',
+          level: 2
+        }, {
+          id: 'C002',
+          level: 2
+        }, {
+          id: 'C005',
+          level: 2
+        }, {
+          id: 'C006',
+          level: 2
+        }, {
+          id: 'C007',
+          level: 2
+        }],//非实例对象！
+        AliceChessList: null,// 实例对象！
+        KatyChessList: null,// 实例对象！
+        Alice: null,
+        Katy: null,
+        AliceIndex: 0,
+        AliceIndexC: 0,
+        KatyIndex: 0,
+        AliceSkills: null,
+        KatySkills: null
+      },
+      CHECK: {
+        checkKatyAllChessLives: function() {
+          let lives = BATTLE.PVE.KatyChessList.length
+          for (let i = 0; i < BATTLE.PVE.KatyChessList.length; i++) {
+            if (BATTLE.PVE.KatyChessList[i].hp < 1) {
+              lives--
+            }
+          }
+          return lives > 0
+        },
+        checkAliceAllChessLives: function() {
+          let lives = BATTLE.PVE.AliceChessList.length
+          for (let i = 0; i < BATTLE.PVE.AliceChessList.length; i++) {
+            if (BATTLE.PVE.AliceChessList[i].hp < 1) {
+              lives--
+            }
+          }
+          return lives > 0
+        }
+      }
+    }
+    var defaultChessLevelData = {
+      normal:
+        [
+          {
+            maxHp: 100,
+            atk: 40,
+            speed: 100,
+            speAtk: 130,
+            ability: 5,//初始值
+            def: 70,
+            speDef: 100,
+            abilityBout: 2,
+            abilityMax: 6
+          },
+          {
+            maxHp: 200,
+            atk: 70,
+            speed: 100,
+            speAtk: 130,
+            ability: 1,
+            def: 70,
+            speDef: 100,
+            abilityBout: 0,
+            abilityMax: 1
+          },
+          {
+            maxHp: 300,
+            atk: 90,
+            speed: 100,
+            speAtk: 130,
+            ability: 1,
+            def: 70,
+            speDef: 100,
+            abilityBout: 0,
+            abilityMax: 1
+          },
+          {
+            maxHp: 400,
+            atk: 100,
+            speed: 100,
+            speAtk: 130,
+            ability: 1,
+            def: 70,
+            speDef: 100,
+            abilityBout: 0,
+            abilityMax: 3
+          },
+          {
+            maxHp: 500,
+            atk: 120,
+            speed: 100,
+            speAtk: 130,
+            ability: 1,
+            def: 70,
+            speDef: 100,
+            abilityBout: 2,
+            abilityMax: 3
+          }
+        ]
+    }
+    var Butler = {
+      compose: function() {
+        if (UI.Target.bench.benchData.size === 0) {
+          UI.Target.msgBox.error('工作台是空的！')
+          return
+        }
+        let is = true
+        let t = null
+        for (let k = 0; k < DATA.itemROM.length; k++) {
+          for (let i = 0; i < DATA.itemROM[k].data.length; i++) {
+            let z = UI.Target.bench.benchData.get(i) ? UI.Target.bench.benchData.get(i).id : undefined
+            if (DATA.itemROM[k].data[i] !== z) {
+              is = false
+            }
+          }
+          if (is) {
+            t = JSON.parse(JSON.stringify(Butler.getItemById(DATA.itemROM[k].result)))
+            break
+          } else {
+            is = true
+          }
+        }
+
+        UI.Target.bench.endComposeBench()
+        if (t) {
+          UI.Target.bench.putItem(t)
+        } else {
+          UI.Target.bench.putItem({
+            name: '蓝莓宝石',
+            id: 'I0012',
+            grade: 9
+          })
+        }
+        console.log(UI.Target.bench.data===STORE.USER.depository);
+       },
+      preCompose: function() {
+        let is = true
+        let s = 0
+        for (let i = 0; i < 9; i++) {
+          if (!UI.Target.bench.benchData.has(i)) {
+            s++
+          }
+        }
+        if (s === 9) {
+          return {
+            name: ''
+          }
+        }
+        for (let k = 0; k < DATA.itemROM.length; k++) {
+          for (let i = 0; i < DATA.itemROM[k].data.length; i++) {
+            let z = UI.Target.bench.benchData.has(i) ? UI.Target.bench.benchData.get(i).id : undefined
+            if (DATA.itemROM[k].data[i] !== z) {
+              is = false
+            }
+          }
+          if (is) {
+            return Butler.getItemById(DATA.itemROM[k].result)
+          } else {
+            is = true
+          }
+        }
+        return {
+          name: '混乱合成'
+        }
+      },
+      getItemById: function(id) {
+        for (let i = 0; i < DATA.ItemMap.length; i++) {
+          if (id === DATA.ItemMap[i].id) {
+            return DATA.ItemMap[i]
+          }
+        }
+      },
+      findSkillsById: function(id) {
+        for (let i = 0; i < DATA.skillLibrary.length; i++) {
+          if (id === DATA.skillLibrary[i].id) {
+            return DATA.skillLibrary[i]
+          }
+        }
+        return DATA.skillLibrary[0]
+      },
+      findChessById: function(id) {
+        for (let i = 0; i < DATA.chessLibrary.length; i++) {
+          if (id === DATA.chessLibrary[i].id) {
+            return DATA.chessLibrary[i]
+          }
+        }
+        return DATA.chessLibrary[0]
+      }
+    }
+    //ability 能力的开头字母
+
+    var DATA = {
+      skillLibrary: [
+        {
+          id: 'A001',
+          action: 'skillAction.attack({damage:BATTLE.EVENT.attacker.atk,});',
+          name: '属性攻击',
+          role: 1,
+          ability: 3
+        },
+
+        {
+          id: 'A002',
+          action: 'skillAction.attack({damage:100,});skillAction.attack({damage:100,});',
+          name: '双倍攻击',
+          role: 1,
+          ability: 4
+        },
+        {
+          id: 'A003',
+          action: 'skillAction.attack({damage:50});skillAction.giveDebuff()',
+          name: '电',
+          role: 0,
+          ability: 1
+        },
+        {
+          id: 'A004',
+          action: 'give BATTLE.TRIGGERUnit shield',
+          name: '盾',
+          role: 0,
+          ability: 1
+        },
+        {
+          id: 'A005',
+          action: 'skillAction.attack({damage:BATTLE.EVENT.attacker.atk*1.2,type:Enum.ele.WATER});',
+          name: '海浪',
+          role: 1,
+          type: Enum.ele.WATER,
+          ability: 4
+        },
+        {
+          id: 'A006',
+          action: 'skillAction.attack({damage:BATTLE.EVENT.attacker.atk*2,type:Enum.ele.FIRE});',
+          name: '火山爆发',
+          role: 1,
+          type: Enum.ele.FIRE,
+          ability: 12
+        },
+        {
+          id: 'A007',
+          action: 'skillAction.attack({damage:BATTLE.EVENT.attacker.atk*1.2,type:Enum.ele.WIND});',
+          name: '狂风',
+          role: 1,
+          type: Enum.ele.WIND,
+          ability: 4
+        },
+        {
+          id: 'A008',
+          action: 'skillAction.attack({damage:BATTLE.EVENT.attacker.atk*1.2,type:Enum.ele.EARTH});',
+          name: '地震',
+          role: 1,
+          type: Enum.ele.EARTH,
+          ability: 2
+        },
+        {
+          id: 'A009',
+          action: 'skillAction.attack({damage:50,target:BATTLE.EVENT.attacker,type:Enum.ele.EARTH});',
+          name: '自残',
+          role: 1,
+          type: Enum.ele.EARTH,
+          ability: 2
+        }
+      ],
+      chessLibrary: [
+        {
+          id: 'C001',
+          name: '天秤座',
+          levelData: {
+            pre: 'normal'
+          },
+          defEle: Enum.ele.WIND,
+          skills: [
+            'A005', 'A006', 'A009'
+          ]
+
+        },
+        {
+          id: 'C002',
+          name: '狮子座',
+
+          defEle: Enum.ele.FIRE,
+          levelData: {
+            pre: 'normal'
+          },
+          skills: [
+            'A001', 'A002', 'A003'
+          ]
+        },
+        {
+          id: 'C003',
+          name: '猎户座',
+
+          defEle: Enum.ele.FIRE,
+          levelData: {
+            pre: 'normal'
+          },
+          skills: [
+            'A002', 'A006'
+          ]
+        },
+        {
+          id: 'C004',
+          name: '天龙座',
+
+          defEle: Enum.ele.LIGHT,
+          levelData: {
+            pre: 'normal'
+          },
+          skills: [
+            'A001', 'A002', 'A003', 'A001'
+          ]
+        },
+        {
+          id: 'C005',
+          name: '处女座',
+          levelData: {
+            pre: 'normal'
+          },
+          defEle: Enum.ele.HERB,
+
+          skills: [
+            'A001', 'A002', 'A003', 'A001'
+          ]
+        },
+        {
+          id: 'C006',
+          name: '天鹅座',
+          levelData: {
+            pre: 'normal'
+          },
+          defEle: Enum.ele.HERB,
+          skills: [
+            'A001'
+          ]
+        },
+        {
+          id: 'C007',
+          name: '六分仪座',
+          levelData: {
+            pre: 'normal'
+          },
+          defEle: Enum.ele.HERB,
+          skills: [
+            'A001'
+          ]
+        }
+      ],
+      itemROM: [
+        {
+          data: [
+            'I0002',
+            'I0002',
+            'I0002',
+            'I0002',
+            'I0010',
+            'I0002',
+            'I0002',
+            'I0002',
+            'I0002'
+          ],
+          result: 'I0099'
+        },
+        {
+          data: [
+            'I0012',
+            undefined,
+            undefined,
+            undefined,
+            'I0012',
+            undefined,
+            undefined,
+            undefined,
+            'I0012'
+
+          ],
+          result: 'I0004'
+        },
+        {
+          data: [
+            'I0000',
+            'I0000',
+            'I0000',
+            'I0000',
+            'I0010',
+            'I0000',
+            'I0000',
+            'I0000',
+            'I0000'
+          ],
+          result: 'I0100'
+        }
+      ],
+      ItemMap: [
+        {
+          id: 'I0099',
+          grade: 12,
+          name: '太阳天秤座'
+        },
+        {
+          id: 'I0004',
+          grade: 12,
+          name: '天球仪'
+        },
+        {
+          id: 'I0100',
+          grade: 12,
+          name: '月亮天秤座'
+        },
+        {
+          name: '恶魔之书',
+          id: 'I0001',
+          grade: 3
+        },
+        {
+          name: '黄道',
+          id: 'I0002',
+          grade: 9
+        },
+        {
+          name: '白道',
+          id: 'I0000',
+          grade: 9
+        },
+        {
+          name: '大恢复药水',
+          id: 'I0003',
+          grade: 3
+        },
+        {
+          name: '天球仪',
+          id: 'I0004',
+          grade: 12
+        },
+        {
+          name: '万能星座拼图',
+          id: 'I0005',
+          grade: 4
+        },
+        {
+          name: '黄道星座拼图',
+          id: 'I0006',
+          grade: 3
+        },
+        {
+          name: '万能拼图',
+          id: 'I0007',
+          grade: 5
+        },
+        {
+          name: '塔罗牌拼图',
+          id: 'I0008',
+          grade: 3
+        },
+        {
+          name: '天秤座拼图',
+          id: 'I0009',
+          grade: 2
+        },
+        {
+          name: '天秤座',
+          id: 'I0010',
+          grade: 7
+
+        },
+        {
+          name: '猎户座',
+          id: 'I0011',
+          grade: 7
+        },
+        {
+          name: '蓝莓宝石',
+          id: 'I0012',
+          grade: 9
+        }
+      ]
+    }
+    var INIT = {
+      domInit: function() {
+        /**
+         * 加载整体窗口
+         * @type {HTMLElement}
+         */
+        /**
+         * 这里是战斗面板的基础加载
+         * @type {HTMLElement}
+         */
+        UI.Target.bench = new KatyLightBench({
+          source: 'benchA',
+          target: 'benchB',
+          data:STORE.USER.depository,
+          benchInfo: document.getElementById('benchInfo'),
+          preCompose: Butler.preCompose
+        })
+        console.log(document.getElementById('WeaponRack'))
+        UI.Target.WeaponRack = new KatyLightWeaponRack({
+
+          target: document.getElementById('WeaponRack'),
+          storeData:STORE.USER.depository,
+          chessList:STORE.USER.chessDepository,
+
+
+        })
+        UI.Target.storeNav = new KatyLightNavbar({
+          target: document.querySelector('#storeNav'),
+          dataList: [
+            {
+              label: '物品修改',
+              key: 'WeaponRack'
+            },
+            {
+              label: '棋子库',
+              key: 'sAllChess'
+            },
+            {
+              label: '技能修改',
+              key: 'sChessS'
+            },
+            {
+              label: '仓库',
+              key: 'sAllItem'
+            },
+            {
+              label: '工作台',
+              key: 'sChessBuilder'
+            }
+          ],
+          choose: (data) => {
+            UI.Draw.showStoreContent(data.value)
+          }
+        })
+        UI.Target.storeContent = 'WeaponRack'
+        document.getElementById(UI.Target.storeContent).classList.add('show')
+
+        UI.Target.KatyAbilitySpan = document.getElementById('katyAbility')
+        UI.Target.AliceHPBar = document.getElementById('AliceHPBar')
+        UI.Target.msgBox = new KatyLightMessage({ box: document.getElementById('msgBox') })
+        UI.Target.KatyHPBar = document.getElementById('KatyHPBar')
+        UI.Target.AliceHPText = document.getElementById('AliceHPText')
+        UI.Target.KatyHPText = document.getElementById('KatyHPText')
+        UI.Target.KatyChessListBox = document.getElementById('KatyChessList')
+        UI.Target.AliceChessListBox = document.getElementById('AliceChessList')
+        UI.Target.AliceHPBar.setAttribute('style', '--percent: 100;')
+        UI.Target.KatyHPBar.setAttribute('style', '--percent: 100;')
+        UI.Target.infoBox = document.getElementById('infoBox')
+        UI.Target.aliceRoundTimerView = document.getElementById('aliceRoundTimerView')
+        UI.Target.AliceChessInfo = document.getElementById('AliceChessInfo')
+        UI.Target.KatyChessInfo = document.getElementById('KatyChessInfo')
+        UI.Target.gameMap = document.getElementById('gameMap')
+      }
+
+    }
+    var skillAction = {
+      /**
+       * BATTLE.TRIGGERUnit to targetUnit damage BATTLE.TRIGGERUnit.damage
+       * @param param
+       * {
+       *   attacker:mySelf,//发动技能的人
+       *   attacked:yourSelf//发动技能的人的敌人
+       *   damage:100//默认0
+       * }
+       */
+      attack: function(param) {
+        let source
+        let target
+        let damage = 0
+        param.type = param.type ? param.type : Enum.ele.NORMAL
+        source = param.source ? param.source : BATTLE.EVENT.attacker
+        target = param.target ? param.target : BATTLE.EVENT.attacked
+
+        if (param.damage) {
+          damage = param.damage
+        }
+
+        // UI.Draw.addSay(`对象<span class="darkCyan">【${source.name}】</span>对<span class="darkCyan">【${target.name}】</span>发动攻击值为：<span class="coralRed">【${damage}】</span>的伤害属性为<span class="blue">【${Enum.ele.properties[param.type].label}】</span><br/>`)
+        BATTLE.DO.hurt(source, target, damage, param.type)
+
+      },
+      /**
+       * give BATTLE.TRIGGERUnit shield
+       * @param param
+       * {
+       *   target:mySelf,//发动技能的人
+       *   damage:100//默认
+       * }
+       */
+      shield: function(param) {
+
+      },
+      giveDebuff: function(param) {
+        if (!param) {
+          param = {}
+        }
+        let source
+        let target
+        let damage = 0
+        source = param.source ? param.source : BATTLE.EVENT.attacker
+        target = param.target ? param.target : BATTLE.EVENT.attacked
+        if (param.damage) {
+          damage = param.damage
+        }
+        UI.Draw.addSay(`对象<span class="darkCyan">【${source.name}】</span>给<span class="darkCyan">【${target.name}】</span>debuff为【麻痹】<br/>`)
+      }
+    }
+    window.onload = () => {
+      INIT.domInit()
+      // VIEW.ACTION.battle()
+      VIEW.WINDOW.INIT.ALL()
+      MAP.INIT.create()
+      // VIEW.WINDOW.ACTIVE.SHOW('store')
+      VIEW.WINDOW.ACTIVE.SHOW('map')
+    }
+
+    function doNothing() {
+      window.event.returnValue = false
+      return false
+    }
+  </script>
+</head>
+<body>
+
+
+<div data-name="battle" class="window">
+  <div class="hpBox">
+
+    <div class="item">
+      <!--    <div class="title">
+            玩家生命值
+          </div>-->
+      <div class="green" id="AliceHPText"></div>
+      <div class="hpBar" id="AliceHPBar"></div>
+    </div>
+    <div class="item" style="text-align: right">
+      <!--    <div class="title2">
+            电脑生命值
+          </div>-->
+      <div class="green" id="KatyHPText"></div>
+      <div class="hpBar2" id="KatyHPBar"></div>
+    </div>
+  </div>
+  <div class="abilityBox">
+    <div class="item">
+      <!--    <div class="title">玩家行动力</div>-->
+      <div id="abilityProgress"></div>
+    </div>
+    <div class="item2">
+      <!--    <div class="title2">电脑行动力</div>-->
+      <div>
+        <div class="cyanCube"></div>
+        <span id="katyAbility"></span>
+      </div>
+    </div>
+  </div>
+  <div class="timeBox">
+    <span id="aliceRoundTimerView"></span>
+  </div>
+  <div>
+    <div id="infoBox"></div>
+  </div>
+  <div class="container">
+    <div class="f1">
+
+    </div>
+
+
+    <div class="flex">
+      <div class="situation">
+        <div class="title">棋子列表</div>
+        <div id="AliceChessList">
+
+        </div>
+
+
+      </div>
+      <div>
+        <div class="flex">
+          <div class="user-control">
+            <div class="title">
+              技能列表
+            </div>
+
+            <div id="AliceSkillBox" class="clear"></div>
+            <div class="title">
+              行动
+            </div>
+            <div id="actionBox clear">
+              <button class="k-btn white" onclick="BATTLE.DO.doActive('SKIP')">跳过
+                <div class="info">跳过也会回复每回合的行动力，在没有行动力的时候自动跳过</div>
+              </button>
+              <button class="k-btn white" onclick="BATTLE.DO.doActive('ESCAPE')">逃跑
+                <div class="info">离开游戏</div>
+              </button>
+              <button class="k-btn white">道具
+                <div class="info">尽情期待</div>
+              </button>
+              <button onclick="BATTLE.DO.doActive('CHANGE')" class="k-btn white">切换
+                <div class="info">切换选中的棋子</div>
+              </button>
+            </div>
+
+          </div>
+          <div class="more-info f1">
+
+
+            <div class="title">战斗信息</div>
+            <div class="  chessInfoBox">
+              <div class="  item" id="AliceChessInfo">
+                <div><span class="title"></span></div>
+                <div>属性：<span class="defEle">火系</span></div>
+                <div>星级：<span class="star">★★★★☆</span></div>
+                <div>物理攻击：<span class="atk">123</span></div>
+                <div>特殊攻击：<span class="speAtk">123</span></div>
+                <div>物理防御：<span class="def">123</span></div>
+                <div>特殊防御：<span class="speDef">123</span></div>
+                <div>速度：<span class="speed">123</span></div>
+                <div class="heal">生命值：<span class="value">123</span>/<span class="max">123</span></div>
+                <div>行动力：<span class="ability">123</span>/<span class="abilityMax">123</span></div>
+                <progress class="hp" value="11" max="213"></progress>
+              </div>
+              <div class="item " id="KatyChessInfo">
+                <div><span class="title"></span></div>
+                <div>属性：<span class="defEle">火系</span></div>
+                <div>星级：<span class="star">★★★★☆</span></div>
+                <div>物理攻击：<span class="atk">123</span></div>
+                <div>特殊攻击：<span class="speAtk">123</span></div>
+                <div>物理防御：<span class="def">123</span></div>
+                <div>特殊防御：<span class="speDef">123</span></div>
+                <div>速度：<span class="speed">123</span></div>
+                <div>行动力：<span class="ability">123</span>/<span class="abilityMax">123</span></div>
+                <div class="heal">生命值：<span class="value">123</span>/<span class="max">123</span></div>
+                <progress class="hp" value="11" max="213"></progress>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="title">
+            战斗公式：
+          </div>
+          <div>
+            （防御-攻击）*10为伤害
+          </div>
+        </div>
+      </div>
+      <div class="situation">
+        <div class="title">敌人队列</div>
+        <div id="KatyChessList">
+
+        </div>
+      </div>
+    </div>
+    <div class="f1">
+
+    </div>
+
+
+  </div>
+</div>
+<div data-name="main" class="window  ">
+
+</div>
+<div data-name="store" class="window  ">
+  <div>你的背包</div>
+  <div class="kl page " style="width: 1000px;margin: 0 auto;">
+    <div class="kl header" style="padding: 7px 20px;">
+      <div id="storeNav"></div>
+    </div>
+    <div class="kl content   " id="WeaponRack" style="position: relative">
+      <div class="flex">
+<!--        <div style="width: 220px">
+          <div class="kl row invert">
+            技能列表
+          </div>
+          <div class="kl list ">
+            <div class="item">沙尘暴</div>
+            <div class="item">平衡</div>
+            <div class="item">属性攻击</div>
+            <div class="item empty">空栏位</div>
+
+          </div>
+
+
+        </div>-->
+        <div style="width:300px;position: relative" class="item-store store kl"  >
+          <div class="item">123</div>
+          <div class="item weapons">123</div>
+          <div class="item armor">123</div>
+          <div class="item ring">123</div>
+          <div class="item gem">123</div>
+        </div>
+
+        <div class="kl page " style="width: 220px">
+          <div class="kl box x8 pack" style="position: relative">
+            <div class="item empty weapons " title="武器"></div>
+            <div class="item empty  shield"  title="盾牌"></div>
+            <div class="item empty  armor"  title="护甲"></div>
+            <div class="item empty  shoes"  title="鞋"></div>
+            <div class="item empty  ring"  title="戒指"></div>
+            <div class="item empty  goods"  title="物品"></div>
+            <div class="item empty  goods"  title="物品"></div>
+            <div class="item empty  goods"  title="物品"></div>
+          </div>
+
+        </div>
+        <div class="kl page f1 chessInfo" style="position: relative">
+
+          <div class="kl row">
+            <div class="kl row">名称：<span>【天秤座】</span></div>
+            <div class="kl row">星级：<span>★★★☆☆</span></div>
+            <div class="kl row flex">
+              <div class="kl f1 td">
+                <span class="t">攻击：</span><span class="d">100</span>
+              </div>
+              <div class="kl f1 td">
+                <span class="t">特攻：</span><span class="d">100</span>
+              </div>
+
+            </div>
+
+            <div class="kl row flex">
+
+              <div class="kl f1 td">
+                <span class="t">特防：</span><span class="d">100</span>
+              </div>
+              <div class="kl f1 td">
+                <span class="t">防御：</span><span class="d">100</span>
+              </div>
+            </div>
+            <div class="kl row flex">
+              <div class="kl f1 td">
+                <span class="t">最大行动力：</span><span class="d">12</span>
+              </div>
+              <div class="kl f1 td">
+                <span class="t">行动力恢复：</span><span class="d">2</span>
+              </div>
+
+            </div>
+            <div class="kl row flex">
+              <div class="kl f1 td">
+                <span class="t">初始行动力：</span><span class="d">12</span>
+              </div>
+              <div class="kl f1 td">
+                <span class="t">行动力恢复：</span><span class="d">2</span>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="kl page">
+        <div>出战列表</div>
+        <div class="chess-list kl">
+          <div class="item active ">
+            <div>天秤座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>魔羯座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>天蝎座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>巨蟹座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>魔羯座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>天蝎座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>巨蟹座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>魔羯座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>天蝎座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>巨蟹座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>魔羯座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>天蝎座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>巨蟹座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>魔羯座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>天蝎座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>巨蟹座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>魔羯座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>天蝎座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>巨蟹座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>魔羯座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>天蝎座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>巨蟹座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>魔羯座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>天蝎座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>巨蟹座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>魔羯座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>天蝎座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>巨蟹座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>魔羯座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>天蝎座</div>
+            <div>★★★☆☆</div>
+          </div>
+          <div class="item ">
+            <div>巨蟹座</div>
+            <div>★★★☆☆</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="kl content  " id="sAllItem">
+      <div>所有物品</div>
+    </div>
+    <div class="kl content  " id="sAllChess">
+      <div>所有棋子</div>
+      <div class="kl box  ">
+        <div class="item"></div>
+        <div class="item"></div>
+        <div class="item"></div>
+        <div class="item"></div>
+        <div class="item"></div>
+        <div class="item"></div>
+        <div class="item"></div>
+        <div class="item"></div>
+        <div class="item"></div>
+      </div>
+      <div>出战列表</div>
+      <div class="kl box  ">
+        <div class="item"></div>
+        <div class="item"></div>
+        <div class="item empty"></div>
+        <div class="item empty"></div>
+        <div class="item empty"></div>
+        <div class="item empty"></div>
+
+      </div>
+    </div>
+    <div id="sChessS" class="kl content">
+      <div>
+        棋子技能修改
+      </div>
+    </div>
+    <div id="sChessBuilder" class="kl content">
+      <div>
+        工作台
+      </div>
+      <div>
+        <div style="display: flex;" oncontextmenu="doNothing()">
+          <div style="flex: 1;height: 300px;padding: 5px;overflow: auto;border: 1px solid white;">
+            <div
+              style="position: sticky;padding: 5px;top: 0;left: 0;width: 100%;background-color: rgba(0,0,0,0.5);z-index: 120;line-height: 30px;vertical-align: middle;border-bottom: 1px solid white;"
+            >排序
+              <button onclick="UI.Mutual.sortItem()" class="kl btn min">清理</button>
+              <button onclick="UI.Mutual.sortItem(2)" class="kl btn min">按权重</button>
+              <button onclick="UI.Mutual.sortItem(3)" class="kl btn min">按数量</button>
+            </div>
+            <div id="benchA"></div>
+          </div>
+          <div style="padding: 5px;border: 1px solid white;">
+            <div id="benchB"></div>
+            <div style="width: 230px;">
+              <div class="info cyan">你这么做会合成【<span id="benchInfo"></span>】</div>
+              <div>
+                <button class="kl btn min mt3" title="标准合成，如果没有合成对象，则混乱合成" onclick="Butler.compose()">合成</button>
+                <button class="kl btn min mt3" title="无论是否有合成对象，都混乱合成">混乱合成</button>
+                <button class="kl btn min mt3" title="清空工作台" onclick="UI.Target.bench.clearBench()">清空</button>
+                <button class="kl btn min mt3" title="分解工作台里面的物品，获取一些物品或者钱" onclick="UI.Target.bench.clearBench()">分解
+                </button>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div data-name="map" class="window  ">
+  请选择你的道路
+  <div class="game-map" id="gameMap"></div>
+</div>
+<div id="controlNav" style="position: fixed;bottom: 60px;width: 100%;left:0;" class="center"></div>
+<div id="msgBox"></div>
+</body>
+</html>
